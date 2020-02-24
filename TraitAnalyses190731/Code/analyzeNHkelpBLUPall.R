@@ -111,6 +111,8 @@ locMeansSEh <- msOutWWPh$beta.SE[17:22]
 
 ##########################
 # Inidividual measurements
+# Somewhere here I would have to filter dataNHim to retain only the ten with
+# longest blades
 dataNHim$plotSub <- paste(dataNHim$plotNo, dataNHim$subPlot, sep="_")
 
 for (col in c("bladeLength", "bladeMaxWidth", "bladeWidth10cm", "bladeThickness", "stipeLength", "stipeDiameter")) dataNHim[,col] <- as.numeric(dataNHim[,col])
@@ -134,6 +136,9 @@ msOutSDh <- mixed.solve(y=log(dataNHim$stipeDiameter+1), Z=msZim, K=hMat, X=msXi
 h2covarHim <- c(heritability(msOutBLh), heritability(msOutBMWh), heritability(msOutBW10h), heritability(msOutBTh), heritability(msOutSLh), heritability(msOutSDh))
 names(h2covarHim) <- c("bladeLength", "bladeMaxWidth", "bladeWidth10cm", "bladeThickness", "stipeLength", "stipeDiameter")
 
+# Can't remember exactly why I wanted to do a multikernel.  I think having
+# to do with the different levels on individuals and plots.  But I think
+# the model did not converge
 emZlist <- list(emZsp, emZpl)
 emKlist <- list(hMat, diag(ncol(emZpl)))
 emOutBLh <- EMMREML::emmremlMultiKernel(y=log(dataNHim$bladeLength+1), X=msXim, Zlist=emZlist, Klist=emKlist)
