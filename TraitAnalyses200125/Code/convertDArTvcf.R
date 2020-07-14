@@ -17,6 +17,8 @@ convertDArTvcf <- function(fileName){
   dartMat <- matrix(scan(vcf, what=character()), ncol=nInd+9, byrow=T)
   close(vcf)
   mrkNames <- apply(dartMat[,1:2], 1, function(v) paste(v, collapse="."))
+  nUnmapped <- sum(mrkNames == "...")
+  mrkNames[mrkNames == "..."] <- paste0("unmapped", 1:nUnmapped)
   dosages <- apply(dartMat[,-(1:9)], 1, dartVecToDosage)
   rownames(dosages) <- indNames
   colnames(dosages) <- mrkNames

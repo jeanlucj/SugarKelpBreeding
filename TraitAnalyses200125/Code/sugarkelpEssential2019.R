@@ -28,20 +28,26 @@ source("convertDArTvcf.R")
 fileName <- "../DArT/Report_DSacc18-3679_SNP_singlerow_2.csv"
 fndrMrkData <- convertDArTvcf(fileName)
 # Filtering of marker data
+# Marker call rate > 0.8
 nNAperMrk <- apply(fndrMrkData, 2, function(v) sum(is.na(v))) / nrow(fndrMrkData)
 fndrMrkData <- fndrMrkData[, nNAperMrk < 0.2]
 nNAperInd <- apply(fndrMrkData, 1, function(v) sum(is.na(v))) / ncol(fndrMrkData)
+# Individual call rate > 0.8
 fndrMrkData <- fndrMrkData[nNAperInd < 0.2,]
 rownames(fndrMrkData) <- paste0(substring(rownames(fndrMrkData), first=1, last=2), "18", substring(rownames(fndrMrkData), first=3))
 mrkRelMat <- A.mat(fndrMrkData, impute.method="EM", return.imputed=T, n.core=4)
 fndrMrkDataImp <- mrkRelMat$imputed
 mrkRelMat <- mrkRelMat$A
 
+### Make pedigree relationship matrix
+# Create the pedigree
 source("makeBiphasicPed.R")
 kelpNameColumns <- dataNHpi[, c("femaPar", "malePar")]
 kelpNameColumns <- kelpNameColumns[kelpNameColumns[,1] != "",]
+# rownames(mrkRelMat) gives the names of the founders to the pedigree
 biphasicPedNH <- makeBiphasicPed(kelpNameColumns, rownames(mrkRelMat))
 
+# Calculate the relationship matrix
 source("calcCCmatrixBiphasic.R")
 biphasicCCmat <- calcCCmatrixBiphasic(biphasicPedNH)
 rownames(biphasicCCmat) <- colnames(biphasicCCmat) <- rownames(biphasicPedNH)
@@ -51,23 +57,32 @@ gpRows <- which(apply(biphasicPedNH[,2:3], 1, function(vec) is.na(vec[2])))
 spRows <- which(apply(biphasicPedNH[,2:3], 1, function(vec) all(vec > 0)))
 nSp <- length(spRows)
 
+# Combine the marker- with the pedigree- relationship matrix to make H matrix
 hMat <- calcHmatrix(mrkRelMat, aMat, aMatFounders=rownames(mrkRelMat))
 saveRDS(hMat, file="hMat_analyzeNH.rds")
 
 ###################################
 ## Data analysis really starts here
+
 # Plot information analysis
+# popChk: variable to indicate whether a plot is a check or an experimental sporophyte
 dataNHpi$popChk <- ifelse(substr(dataNHpi$plotNo, 1, 1) == "C", substr(dataNHpi$plotNo, 1, 2), "ES")
+# withinLoc: variable is 1 if the cross was between gametophytes sampled from
+# the same location, zero otherwise
 dataNHpi$withinLoc <- c(ifelse(dataNHpi$femaParLoc[1:nSp] == dataNHpi$maleParLoc[1:nSp], 1, 0), rep(0, 19))
 
+# Enforce data is numeric. If we don't have percent dry weight, set to missing
 for (col in c("wetWgtPlot", "lengthPlot", "numBlades5cm", "densityBlades", "percDryWgt", "wetWgtPerM", "dryWgtPerM")) dataNHpi[,col] <- as.numeric(dataNHpi[,col])
 dataNHpi[is.na(dataNHpi$percDryWgt), c("wetWgtPerM", "dryWgtPerM")] <- NA
 keepRows <- !is.na(dataNHpi$percDryWgt)
 
+# isSelf: variable is 1 if the cross was between gametophytes from the same 
+# sporophyte, zero otherwise
 isSelf <- integer(nrow(dataNHpi))
 isSelf[diag(aMat[spRows, spRows]) > 1] <- 1
 dataNHpi$isSelf <- isSelf
 
+# Experimental design variables should be factors
 for (col in c("plotNo", "femaPar", "femaParLoc", "malePar", "maleParLoc", "line", "block", "date", "popChk", "withinLoc", "isSelf")) dataNHpi[,col] <- as.factor(dataNHpi[,col])
 
 msX <- model.matrix( ~ line + block + date + popChk, data=dataNHpi)
@@ -80,6 +95,8 @@ heritability <- function(msOut){
   return(msOut$Vu / (msOut$Vu + msOut$Ve))
 }
 
+### Heritability for traits using pedigree-based relationship matrix
+# h2naive means unconditional heritability
 msOutWWP1 <- mixed.solve(y=log(dataNHpi$wetWgtPlot+1), Z=msZ, K=aMat, X=msX)
 msOutDB1 <- mixed.solve(y=dataNHpi$densityBlades, Z=msZ, K=aMat, X=msX)
 msOutDWPM1 <- mixed.solve(y=log(dataNHpi$dryWgtPerM+1), Z=msZ, K=aMat, X=msX)
@@ -87,17 +104,9 @@ msOutPDW1 <- mixed.solve(y=dataNHpi$percDryWgt, Z=msZ, K=aMat, X=msX)
 h2naive <- c(heritability(msOutDB1), heritability(msOutWWP1), heritability(msOutDWPM1), heritability(msOutPDW1))
 names(h2naive) <- c("densityBlades", "wetWgtPlot", "dryWgtPerM", "percDryWgt")
 
-# Add in two components:
-# 1. Density Blades covariate
-# 2. Replace fixed effect of experimental versus check with the experimental location of origin
-# Both components will take out some genetic variation.  Should probably figure out how much each...
-femaLocInc <- model.matrix(~ -1 + femaParLoc, data=dataNHpi)
-maleLocInc <- model.matrix(~ -1 + maleParLoc, data=dataNHpi)
-locInc <- (femaLocInc[,-1] + maleLocInc[,-1]) / 2
-# locInc sums to 1 for all experimental sporophytes but 0 for the checks
-# So perfectly colinear with the popChkES incidence column (17)
-# msXdb <- cbind(msX[, -17], locInc) 
-# 20190720 locInc causing a problem.  Not using it.
+### Heritability conditional on blade density using pedigree-based relationship
+# Density Blades covariate
+# The covariate relative to the focal trait could either remove sources of external random error or be a component that contributes genetic variation. The two are not mutually exclusive. To the extent that the former is prevalent the conditional heritability will be higher than the unconditional heritability. To the extent that the latter is prevalent, the reverse will hold. 
 
 msXdb <- model.matrix( ~ densityBlades + line + block + date + popChk, data=dataNHpi)
 
@@ -112,17 +121,20 @@ locMeans <- msOutWWP$beta[17:22]
 locMeans <- locMeans - min(locMeans)
 locMeansSE <- msOutWWP$beta.SE[17:22]
 
+### Heritability for traits using the H matrix
 msOutWWPh <- mixed.solve(y=log(dataNHpi$wetWgtPlot+1), Z=msZ, K=hMat, X=msX, SE=T)
 msOutDBh <- mixed.solve(y=dataNHpi$densityBlades, Z=msZ, K=hMat, X=msX, SE=T)
 msOutDWPMh <- mixed.solve(y=log(dataNHpi$dryWgtPerM+1), Z=msZ, K=hMat, X=msX, SE=T)
 msOutPDWh <- mixed.solve(y=dataNHpi$percDryWgt, Z=msZ, K=hMat, X=msX, SE=T)
 
+### Heritability conditional on development level at painting using the H matrix
 # The checks don't have this development measure, so assign at random and
-# do multiple times
+# do multiple times (nRepeats)
+nRepeats <- 10
 nIsNAdev <- sum(is.na(dataNHpi$development))
 fracDevelIs1 <- sum(dataNHpi$development == 1, na.rm=T) / sum(!is.na(dataNHpi$development))
 develBLUPs <- develVu <- develVe <- h2covarPSi <- NULL
-for (multImp in 1:10){
+for (multImp in 1:nRepeats){
   dataNHpi$develImp <- dataNHpi$development
   dataNHpi$develImp[is.na(dataNHpi$development)] <- if_else(runif(nIsNAdev) < fracDevelIs1, 1, 4)
   msOutDevelh <- mixed.solve(y=dataNHpi$develImp, Z=msZ, K=hMat, X=msX, SE=T)
@@ -150,12 +162,16 @@ h2covarPS <- rowMeans(h2covarPSi)
 h2hMat <- c(heritability(msOutWWPh), heritability(msOutDWPMh), heritability(msOutPDWh), heritability(msOutDBh), heritability(msOutDevelh))
 names(h2hMat) <- c("wetWgtPlot", "dryWgtPerM", "percDryWgt", "densityBlades", "paintSPdevel")
 
+# Function to calculate the mean, accounting for full rank incidence matrix
+# WARNING: this function is hard-coded for the fixed effect incidence matrix
+# msX <- model.matrix( ~ line + block + date + popChk, data=dataNHpi)
+# So four lines, nine blocks, three dates
 getMean <- function(beta){
   beta[1] + sum(beta[2:4])/4 + sum(beta[5:12])/9 + sum(beta[13:14])/3
 }
-#intercepts <- c(msOutWWPh$beta[1], msOutDWPMh$beta[1], msOutPDWh$beta[1], msOutDBh$beta[1], msOutDevelh$beta[1])
 intercepts <- c(getMean(msOutWWPh$beta), getMean(msOutDWPMh$beta), getMean(msOutPDWh$beta), getMean(msOutDBh$beta), getMean(msOutDevelh$beta))
 names(intercepts) <- c("wetWgtPlot", "dryWgtPerM", "percDryWgt", "densityBlades", "paintSPdevel")
+# wetWgtPlot and dryWgtPerM log transformed
 intercepts[1:2] <- exp(intercepts[1:2]) - 1
 
 locMeansH <- msOutWWPh$beta[17:22]
@@ -413,3 +429,12 @@ pdf("~/Google Drive/Teaching/Seminars/2020/ARPA-E2020/Sources/CondHeritab.pdf", 
 barplot(forCondHerit, ylab="Heritability", cex.axis=1.3, cex.lab=1.3, cex.names=1.3, col=c("gray", "dark green", "dark red"))
 legend(2.57, 0.555, c("Conditional on Blade Density", "Conditional on Paint SP Devel."), pch=22, col=1, pt.bg=c("dark green", "dark red"), pt.cex=2, cex=1.5)
 dev.off()
+
+# Code to figure out incidence matrix of sampling location
+femaLocInc <- model.matrix(~ -1 + femaParLoc, data=dataNHpi)
+maleLocInc <- model.matrix(~ -1 + maleParLoc, data=dataNHpi)
+locInc <- (femaLocInc[,-1] + maleLocInc[,-1]) / 2
+# locInc sums to 1 for all experimental sporophytes but 0 for the checks
+# So perfectly colinear with the popChkES incidence column (17)
+# msXdb <- cbind(msX[, -17], locInc) 
+# 20190720 locInc causing a problem.  Not using it.

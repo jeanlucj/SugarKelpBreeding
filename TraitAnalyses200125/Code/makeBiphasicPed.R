@@ -2,7 +2,12 @@
 #'
 #' @param kelpNameColumns A two-column data.frame with female parents in
 #' column 1 and male parents in column 2.  These columns have names in the
-#' specific format of dataNH
+#' specific format of dataNH.
+#' Name format: SA18-CB-10-F1 
+#' Two letters for the species, two digits for the sampling year
+#' dash two letters for the sampling location dash
+#' Sporophyte sample number dash 
+#' Single letter male or female, single digit gametophyt number
 #'  
 #' @return A three-column pedigree matrix with row number and parent ID
 #' listed as row numbers 
