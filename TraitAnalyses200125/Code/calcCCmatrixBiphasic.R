@@ -46,7 +46,7 @@ calcCCmatrixBiphasic <- function(pedColumns){
       ccMat[1:progM1, prog] <<- sireRow
       ccSelf <- 1
     } else{ # The progeny is a diploid (SP)
-      if (dam){
+      if (dam != 0){
         damRow <- ccMat[dam, 1:progM1] # Non-founder
       } else{
         damRow <- integer(progM1) # Founder
