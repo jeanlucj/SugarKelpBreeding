@@ -12,39 +12,46 @@
 #' @return A three-column pedigree matrix with row number and parent ID
 #' listed as row numbers
 #'
+library(stringr)
 makeBiphasicPed <- function(kelpNameColumns, founderFirst=NULL){
-    # Sporophyte founders
-    founder <- unlist(kelpNameColumns)
-    founder <- strsplit(founder, split="-", fixed=T)
+    founder <- as.character(unlist(kelpNameColumns))
+    founder<-strsplit(founder,split="-",fixed=T)
     founder <- sapply(founder, function(vec) paste(vec[1:3], collapse="-"))
     founder <- unique(founder)
     founder <- c(founderFirst, setdiff(founder, founderFirst))
     nFounders <- length(founder)
-    # Make the pedigree matrix for the founders
-    fndRow <- 1:nFounders
-    names(fndRow) <- founder
-    fndPed <- cbind(fndRow, 0, 0)
-    
-    # Gametophytes coming from founders
-    parFemale <- unique(kelpNameColumns[,1])
-    parMale <- unique(kelpNameColumns[,2])
-    # The SP parents of the gametophytes
+        nFounders
+    ####Getting the female & male list of names     
+    parFemale <- as.character(unique(kelpNameColumns[,1]))
+    parMale <- as.character(unique(kelpNameColumns[,2]))
     founderParFema <- sapply(strsplit(parFemale, split="-", fixed=T), function(vec) paste(vec[1:3], collapse="-"))
     founderParMale <- sapply(strsplit(parMale, split="-", fixed=T), function(vec) paste(vec[1:3], collapse="-"))
-    # Make the pedigree matrix for the GPs from the founders
+    
+    fndRow <- 1:nFounders
+    names(fndRow) <- founder
+    
+    #### Order the female and male in the proper list
     femaRow <- nFounders + 1:length(parFemale)
     names(femaRow) <- parFemale
+    
     maleRow <- nFounders + length(parFemale) + 1:length(parMale)
     names(maleRow) <- parMale
-    # GPs only have one parent, so second parent is NA
+    
+    #write.csv(parFemale,"parFemale.csv")
+    #write.csv(parMale,"parMale.csv")
+    ####?
+    fndPed <- cbind(fndRow, 0, 0)
     femaPed <- cbind(femaRow, fndRow[founderParFema], NA)
     malePed <- cbind(maleRow, fndRow[founderParMale], NA)
-    
-    # Sporophyte progeny of the gametophytes
     sporProg <- 1:nrow(kelpNameColumns) + nFounders + length(parFemale) + length(parMale)
-    progPed <- cbind(sporProg, femaRow[kelpNameColumns[,1]], maleRow[kelpNameColumns[,2]])
     
-    # Put all the bits of pedigree matrix together
+    #### This piece is wrong IF WITHOUT the as.character() part, which then mixed up the searching numbers
+    names(sporProg)<-paste0(kelpNameColumns[,1], "x", kelpNameColumns[,2]) ### MH add !!
+    
+    progPed <- cbind(sporProg, femaRow[as.character(kelpNameColumns[,1])], maleRow[as.character(kelpNameColumns[,2])]) ### Here the rows are 1 extrac
+    
+ 
+    
     allPed <- rbind(fndPed, femaPed, malePed, progPed)
     rownames(allPed) <- c(founder, parFemale, parMale, paste(kelpNameColumns[,1], kelpNameColumns[,2], sep="x"))
     return(allPed)
