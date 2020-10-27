@@ -26,11 +26,17 @@ head(dataNHpiBoth_C)
 
 #load(paste0("hMat_PedNH_CCmat_fndrMrkData_",yr,"_PhotoScore23.rdata"))
 #load(paste0("hMat_PedNH_CCmat_fndrMrkData_Both_PhotoScore23_NoSGP.rdata"))
+####
 load(paste0("/Users/maohuang/Desktop/Kelp/2020_2019_Phenotypic_Data/Phenotypic_Analysis/TraitAnalyses200820_Updated_AfterCrossList/withSGP/hMat_PedNH_CCmat_fndrMrkData_Both_PhotoScore23_withSGP_866.rdata"))
+hMat_dip<-hMat
+hMat_hap<-outCovComb4<-outCovComb4_conden
+library(cultevo)
+mantel.test(dist(as.matrix(hMat_dip)),dist(as.matrix(hMat_hap)),trials=99) # r=0.269???
+####
 
 spRows <- which(apply(biphasicPedNH[,2:3], 1, function(vec) all(vec > 0)))    ### Progeny sps, col 2 and 3 are all values
 nSp <- length(spRows)
-nSp #244  #245
+  nSp #244  #245
 
 dataNHpi$popChk <- ifelse(substr(dataNHpi$plotNo, 1, 1) == "Z", substr(dataNHpi$plotNo, 1, 2), "ES")  # Checks VS ES
 
@@ -41,7 +47,7 @@ dataNHpi$development[dataNHpi$development=="#N/A"] <-NA
 # Experimental design variables should be factors
 for (col in c( "Year", "plotNo","GrowDays","femaPar", "femaParLoc", "malePar", "maleParLoc", "PlantingDens", "block", "line","popChk")) 
   dataNHpi[,col] <- factor(dataNHpi[,col])
-nlevels(dataNHpi$plotNo)
+  nlevels(dataNHpi$plotNo)
 
 # Make data cols numeric. Enforce data is numeric
 for (col in c("wetWgtPlot", "lengthPlot", "wetWgtPerM","percDryWgt",  "dryWgtPerM","densityBlades","AshFreedryWgtPerM","AshFDwPM")) 
@@ -50,7 +56,7 @@ for (col in c("wetWgtPlot", "lengthPlot", "wetWgtPerM","percDryWgt",  "dryWgtPer
 # If percentDryWeigth is NA, then the plot WetWeightPerM and DryWeightperM should be set at NA, WetWeigthPerM may be just rope
 dataNHpi[is.na(dataNHpi$percDryWgt), c("wetWgtPerM", "dryWgtPerM")] <- NA
 keepRows <- !is.na(dataNHpi$percDryWgt)
-keepRows
+  keepRows
 
 fndrF1<-strsplit(as.character(dataNHpi$femaPar), split="-", fixed=T)
 fndrM1<-strsplit(as.character(dataNHpi$malePar),split="-",fixed=T)
@@ -59,7 +65,7 @@ fndrM<-sapply(fndrM1, function(vec) paste(vec[1:3],collapse="-"))
 
 isSelf<-ifelse(fndrF==fndrM,1,0)
 dataNHpi$isSelf <- isSelf 
-str(dataNHpi)
+  str(dataNHpi)
 
 # Experimental design variables should be factors
 for (col in c("Year","plotNo","GrowDays", "femaPar", "femaParLoc", "malePar", "maleParLoc", "line", "block", "date", "popChk", "withinLoc", "isSelf")) 
@@ -79,16 +85,14 @@ nrowchk<-nrow(dataNHpi) - nrowplot
 #load("outCovComb4_09282020.Rdata")
 ##{{}}
 ##{{}}
+#load("outCovComb4_10012020_withSGP.Rdata")
+
 load("/Users/maohuang/Desktop/Kelp/2020_2019_Phenotypic_Data/Phenotypic_Analysis/TraitAnalyses200820_Updated_AfterCrossList/withSGP/CovComb/outCovComb4_and_Conden.Rdata")
 
-  dim(outCovComb4)
-  outCovComb4[1:4,1:5]
-  dim(biphasicPedNH)
-  biphasicPedNH[1:4,]
 rownames(outCovComb4_conden)<-rownames(biphasicPedNH)  
+outCovComb4<-outCovComb4_conden   ###!!!!!!
 
-outCovComb<-outCovComb4_conden   ###!!!!!!
-
+  dim(outCovComb)
 phenoNamesFact<-factor(dataNHpi_RMchk$Crosses,levels=rownames(outCovComb))   #colnames are sorted alphabetically for the outCovComb 
 msZ0<-model.matrix(~-1 +phenoNamesFact,data=dataNHpi_RMchk)  
 
@@ -111,10 +115,15 @@ write.csv(dataNHpi,paste0("dataNHpi_Last_Used_in_Model_",yr,".csv"))
 
 ########### 6. FINALE !! RUN Model WITHOUT blade density as covariate, but use hMat as the relationship matrx
 
-hMat<-outCovComb ###!!!!!!!!!aMatInitial,weight!!!!!!!!!!!!!
+hMat<-outCovComb4 ###!!!!!!!!!aMatInitial,weight!!!!!!!!!!!!!
 
 dataNHpi<-droplevels(dataNHpi) 
 
+# #Within Year !!!! 2019 2020
+# msX1 <- model.matrix( ~ line+block, data=dataNHpi)
+# msX1 <- msX1[, apply(msX1, 2, function(v) !all(v == 0))]
+
+dataNHpi<-droplevels(dataNHpi)
 msX1 <- model.matrix( ~ line%in%Year+block%in%Year+Year, data=dataNHpi)  ### !!!! No popChk because no checks for ashes
 msX1 <- msX1[, apply(msX1, 2, function(v) !all(v == 0))]
 
@@ -124,6 +133,16 @@ qr(msX1)$rank
 
 msOutAshFDwPM<-mixed.solve(y=dataNHpi$AshFDwPM,Z=msZ, K=hMat, X=msX1, SE=T)
 msOutAshOnly<-mixed.solve(y=dataNHpi$Ash,Z=msZ,K=hMat,X=msX1,SE=T)
+
+msOutAshFreeDW<-mixed.solve(y=dataNHpi$AshFreedryWgtPerM,Z=msZ, K=hMat, X=msX1, SE=T)
+  heritability(msOutAshFreeDW) #both 0.561 #2019 #2020 0.7995067
+  heritability(msOutAshFDwPM) #both 0.461 #2019 #2020 0.5173875 
+  heritability(msOutAshOnly)
+  
+# Within Year !!!! 2019 2020
+# msX <- model.matrix( ~ line+block+popChk, data=dataNHpi)  
+# msX <- msX[, apply(msX, 2, function(v) !all(v == 0))]
+
 
 ### This two differs between years. put in the beginning to use them
 ###!!!!!!!!!!!!!!!!!! Both Years !!!!!!!!!!!
@@ -139,14 +158,18 @@ msOutWWPh <- mixed.solve(y=log(dataNHpi$wetWgtPlot+1), Z=msZ, K=hMat, X=msX, SE=
 msOutDWPMh <- mixed.solve(y=log(dataNHpi$dryWgtPerM+1), Z=msZ, K=hMat, X=msX, SE=T)
 msOutPDWh <- mixed.solve(y=dataNHpi$percDryWgt, Z=msZ, K=hMat, X=msX, SE=T)
 
-h2hMat <- c(heritability(msOutAshFDwPM),heritability(msOutWWPh), heritability(msOutDWPMh), heritability(msOutPDWh),heritability(msOutDBh))
-names(h2hMat) <- c("AshFDwPM","wetWgtPlot", "dryWgtPerM", "percDryWgt","densityBladesPerM")
+h2hMat <- c(heritability(msOutAshFDwPM),heritability(msOutAshOnly),heritability(msOutWWPh), heritability(msOutDWPMh), heritability(msOutPDWh),heritability(msOutDBh))
+names(h2hMat) <- c("AshFDwPM","AshOnly","wetWgtPlot", "dryWgtPerM", "percDryWgt","densityBladesPerM")
   round(h2hMat,3) 
 
+  
+  
+  
+  
 allBLUPs <- cbind(msOutAshFDwPM$u,msOutAshOnly$u,msOutDWPMh$u,msOutWWPh$u,  msOutPDWh$u)
   dim(allBLUPs)
 colnames(allBLUPs) <- c("AshFDwPM","AshOnly","DWpM","WWP",  "PDW")
-write.csv(allBLUPs,"allBLUPs_PlotsOnly_withSGP_866_haploidlevel.csv")  
+write.csv(allBLUPs,"allBLUPs_PlotsOnly_withSGP_866.csv")  
 
 ### Combining all the GPs that have the GEBV
 SProg_GPs<-allBLUPs[grep("UCONN-S",rownames(allBLUPs)),]  ### Grep only the SProg_GPs
@@ -880,20 +903,20 @@ write.csv(dataOrder2,"GOM_New_Crosses_Ranked_Add20_Diversity.csv")
 for (col in c( "Year", "plotNo")) 
   dataNHim[,col] <- factor(dataNHim[,col])
 
-tail(dataNHim)
-dim(dataNHim)
-tail(dataNHpi)
+  tail(dataNHim)
+  dim(dataNHim)
+  tail(dataNHpi)
 
 for (col in c("bladeLength", "bladeMaxWidth", "bladeThickness", "stipeLength", "stipeDiameter"))  
   dataNHim[,col] <- as.numeric(dataNHim[,col])
 
 dataNHim2<-subset(dataNHim,dataNHim$plotNo%in%dataNHpi$plotNo) #!!!! Each plotNo is unique
-dim(dataNHim2)
-dim(dataNHim)
+  dim(dataNHim2)
+  dim(dataNHim)
 dataNHim2$plotNo<-factor(dataNHim2$plotNo)
-nlevels(dataNHim2$plotNo) 
-nlevels(dataNHpi$plotNo)
-nlevels(dataNHim$plotNo)
+  nlevels(dataNHim2$plotNo) 
+  nlevels(dataNHpi$plotNo)
+  nlevels(dataNHim$plotNo)
 
 levels(dataNHim2$plotNo) <- levels(dataNHpi$plotNo)
 dataNHim0<-dataNHim
@@ -903,17 +926,17 @@ dataNHim<-dataNHim2
 msXim <- model.matrix( ~ -1 + plotNo, data=dataNHim)  # nrow=nrow(dataNHim), ncol=number of plotNo=nlevels(plotNo)
 
 #rownames(msXim)<-rownames(dataNHim)
-dim(msXim)
-dim(dataNHim)
+  dim(msXim)
+  dim(dataNHim)
 
 msZim <- emZsp <- msXim %*% msZ
 #msXim <- msXim %*% msXdb
 msXim<-msXim%*%msX
 
-dim(msX)
-dim(msXim)
-dim(msZim)
-dim(dataNHim)
+  dim(msX)
+  dim(msXim)
+  dim(msZim)
+  dim(dataNHim)
 
 msXim<-msXim[, apply(msXim, 2, function(v) !all(v == 0))]
 
@@ -925,38 +948,73 @@ msOutSDh <- mixed.solve(y=log(dataNHim$stipeDiameter+1), Z=msZim, K=hMat, X=msXi
 h2hMatim <- c(heritability(msOutBLh), heritability(msOutBMWh), heritability(msOutBTh), heritability(msOutSLh), heritability(msOutSDh)) #
 names(h2hMatim) <- c("bladeLength", "bladeMaxWidth",  "bladeThickness", "stipeLength", "stipeDiameter") 
 
-round(h2hMatim,3)
-
-names(h2hMat) 
-names(h2hMatim) <- c("bladeLength", "bladeMaxWidth", "bladeThickness", "stipeLength", "stipeDiameter")
-
+  round(h2hMatim,3)
+  names(h2hMat) 
 allh2h<-c(h2hMat,h2hMatim)
-allh2h
+  allh2h
 write.csv(allh2h,paste0("heritability_all_",yr,".csv"))
 
 
 #rownames(allBLUPs) is the same as that in u, and hMat
+
 allBLUPs <- cbind(msOutAshFDwPM$u,msOutAshOnly$u,msOutDWPMh$u,msOutWWPh$u,  msOutPDWh$u, msOutDBh$u, msOutBLh$u, msOutBMWh$u,  msOutBTh$u, msOutSLh$u, msOutSDh$u)
 colnames(allBLUPs) <- c("AshFDwPM","AshOnly","DWpM","WWP",  "PDW", "BDns", "BLen", "BMax",  "BThk", "SLen", "SDia")
 
-pdf(paste0("/Users/maohuang/Desktop/Kelp/2020_2019_Phenotypic_Data/Phenotypic_Analysis/","CorrPlot_",yr,"_PhotoScore23.pdf"))
-corrplot::corrplot.mixed(cor(allBLUPs), diag="n", tl.cex=0.9, tl.col=1)
+
+### Combining all the GPs that have the GEBV
+SProg_GPs<-allBLUPs[grep("UCONN-S",rownames(allBLUPs)),]  ### Grep only the SProg_GPs
+allBLUPs0<-allBLUPs
+
+### allBLUPs would remove all the SP_GP plots
+allBLUPs<-allBLUPs[!rownames(allBLUPs)%in%rownames(SProg_GPs),]
+###
+  dim(allBLUPs)
+  dim(allBLUPs0)
+sampledSP <- which(nchar(rownames(allBLUPs)) < 11)  # The fndr SP is max of 10 characters
+releaseGP <- nchar(rownames(allBLUPs))   
+releaseGP <- which(10 < releaseGP & releaseGP <=15)  #FG and MG from fndr SP is max of 14 characters
+progenySP <- which(nchar(rownames(allBLUPs)) > 15)   #the Cross name is larger than 15 characters
+
+fndNames <- rownames(allBLUPs)[sampledSP]
+hasDesc <- sapply(fndNames, function(n) grep(n, rownames(allBLUPs)[progenySP]))
+
+nDesc <- sapply(hasDesc, length)
+  nDesc
+
+GP_allBLUPs<-as.data.frame(rbind(allBLUPs[releaseGP,],SProg_GPs)) ## !!! Added the SProg_GPs  
+  dim(GP_allBLUPs)
+#GP_allBLUPs<-as.data.frame(rbind(allBLUPs[releaseGP,]))
+SP_allBLUPs<-as.data.frame(allBLUPs[progenySP,])
+SP_allBLUPs<-SP_allBLUPs[order(-SP_allBLUPs$AshFDwPM),]
+
+nrow(GP_allBLUPs)+length(fndNames)+nrow(SP_allBLUPs)
+#517(=439 GPs_from_fndr+78 SProg_GPs) +104+ 245
+
+pdf(paste0("/Users/maohuang/Desktop/Kelp/SugarKelpBreeding/TraitAnalyses201003/","CorrPlot_SPplots",yr,"_PhotoScore23_WithHaploid.pdf"))
+corrplot::corrplot.mixed(cor(SP_allBLUPs), diag="n", tl.cex=0.6, tl.col=1)
 dev.off()
 
 
-
+traitname<-"AshFDwPM" # !!!!!!!!!!
 # Different colors for fndr, GP, progeny SP crosses
-colSPGP <- c(rep("black", length(sampledSP)), rep("dark green", length(releaseGP)), rep("dark red", length(progenySP)))
+colSPGP <- c(rep("black", length(sampledSP)), rep("dark green", length(releaseGP)), rep("dark red", length(progenySP)),rep("red",nrow(SProg_GPs)))
 colSPGP[which(nDesc == 0)] <- "grey"
 
-pdf(paste0("DWpMvsIndividual",yr,"_PhotoScore23_haploidlevel.pdf"))
-plot(allBLUPs[,2], pch=16, col=colSPGP, xlab="Individual number", ylab="Dry weight per plot") # !!The second col is DWpM
+OrderedBLUPs<-rbind(allBLUPs[sampledSP,],allBLUPs[releaseGP,],allBLUPs[progenySP,],SProg_GPs)
+  dim(OrderedBLUPs)
+  str(colSPGP)
+#### Plot out each generation of BLUPs
+pdf(paste0("/Users/maohuang/Desktop/Kelp/SugarKelpBreeding/TraitAnalyses201003/",traitname,"vsIndividual",yr,"_PhotoScore23_withHaploid.pdf"))
+plot(OrderedBLUPs[,colnames(OrderedBLUPs)%in%traitname], pch=16, col=colSPGP, xlab="Individual number", ylab=traitname) # !!The second col is DWpM
 dev.off()
 
-rnPos <- rownames(allBLUPs)[intersect(which(nDesc == 0), which(allBLUPs[,2]>0))] #!! The second col is DWpM
-rnNeg <- rownames(allBLUPs)[intersect(which(nDesc == 0), which(allBLUPs[,2]<0))] #!! The second col is DWpM
-locPos <- table(substring(rnPos, 6, 7))
-locNeg <- table(substring(rnNeg, 6, 7))
+
+write.csv(OrderedBLUPs,paste0("allBLUPsDF_Ordred_",yr,"_Plots_WithHaploid.csv"))
+
+# rnPos <- rownames(allBLUPs)[intersect(which(nDesc == 0), which(allBLUPs[,colnames(allBLUPs)%in%traitname]>0))] #!! The second col is DWpM
+# rnNeg <- rownames(allBLUPs)[intersect(which(nDesc == 0), which(allBLUPs[,colnames(allBLUPs)%in%traitname]<0))] #!! The second col is DWpM
+# locPos <- table(substring(rnPos, 6, 7))
+# locNeg <- table(substring(rnNeg, 6, 7))
 
 allBLUPsDF <- as.data.frame(allBLUPs)
 allBLUPsDF <- cbind(pedigree=rownames(allBLUPs), allBLUPsDF)
