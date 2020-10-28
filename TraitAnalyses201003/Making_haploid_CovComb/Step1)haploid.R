@@ -27,11 +27,7 @@ geno4<-onerow
 geno4[geno4==1]=1
 geno4[geno4==0]=1
 geno4[geno4==-1]=0
-  geno[1:4,1:5]
-  fndrMrkDataImp[1:4,1:5]
-  onerow[1:4,1:5]
-  geno3[1:4,1:5]
-  geno4[1:4,1:5]
+  
 geno4<-as.matrix(geno4)
 geno3<-as.matrix(geno3)
 genoC<-matrix(nrow=nrow(geno4)*2,ncol=ncol(geno4))
@@ -54,30 +50,26 @@ load("FarmCPU_GAPIT.Rdata")
 ls()
 geno2<-geno[,-1]
 rownames(geno2)<-geno$taxa
-geno2[1:5,1:6]
-dim(geno2)
+
 rownames(geno2) <- paste0(substring(rownames(geno2), first=1, last=2), "18", substring(rownames(geno2), first=3))
 geno2[geno2==0]=-1
 geno2[geno2==1]=0
 geno2[geno2==2]=1
 
-#######Did not do this step, 
-#so some fnders were not in the pedigree file but were included to estimate aMat, they were removed out later
-#though this should not be an issue??
-#######
+#######Did not do this step
 #geno2<-geno2[rownames(geno2)%in%CrossedSP,]  # 93 fnders made crosses, only 56 were genotyped
-#write.csv(rownames(geno2),"Fndrs_genotyped_Samples.csv")
+#so some fnders were not in the pedigree file but were included to estimate aMat, they were removed out later
+#though this should not be an issue?????
+#######
 
 fndrMrkData<-geno2
 
-## Impute fndr Mrk at diploid level
+## Impute fndr Mrk at diploid level, convert to haploid format
 mrkRelMat <- A.mat(fndrMrkData, impute.method="EM", return.imputed=T,shrink=TRUE) ## Add shrink per Deniz
 fndrMrkDataImp <- mrkRelMat$imputed
 
 fndOneRow<-ConvertOneRow(fndrMrkDataImp)$OneRowG
-  dim(fndOneRow)
-  fndOneRow[1:4,1:5]  
-  dim(fndrMrkDataImp)
+
 
 # Calculate GRM as (W %*% W^T) / sum(locusDosageVariance)
 # To calculate p, the function expects dosage coding to be 0, 1, 2 for diploid
@@ -90,30 +82,22 @@ fndOneRow<-ConvertOneRow(fndrMrkDataImp)$OneRowG
   }
   
 fndrA<-calcGenomicRelationshipMatrix(fndOneRow,ploidy=1)  ###!!! 1. fnder marker Rel matrix, haploid
-#fndrAcondese<-condenseHapCCmat(fndrA)
 
-##Another way of estimating the relationship Matrix. Why results not the same??
-#M<-fndOneRow  ##### RelationshipMatrix for GP another way
+##Another way of estimating the relationship Matrix. BUT fndrA and fndrA2 are not the same????
+#M<-fndOneRow  
 #fndrA2<-cov(t(M))/mean(diag(cov(t(M))))  #assuming M is (nxp) GenotypesxMarkers allele frequencies matrix (p>>n)
 
   
-## GPs change rows format    
 
-#### 2. ####  
+#### 2. Pedigree, ccMatrix change rows names    
 setwd("/Users/maohuang/Desktop/Kelp/2020_2019_Phenotypic_Data/Phenotypic_Analysis/TraitAnalyses200820_Updated_AfterCrossList/withSGP")
 biphasicPedNH<-read.csv("biphasiPedNH_addmoreGP_866.csv",sep=",",header=T,row.names=1) 
-  dim(biphasicPedNH)
-  head(biphasicPedNH)
-  tail(biphasicPedNH)
-# #########
+
+####
   
 source("calcCCmatrixBiphasic.R")  
   
 biphasicPedNH<-as.matrix(biphasicPedNH)  
-#namesNum<-grep("UCONN",rownames(biphasicPedNH))
-#namesLS<-rownames(biphasicPedNH)[namesNum]
-#library(stringr)
-#rownames(biphasicPedNH)[namesNum]<-apply(str_split_fixed(namesLS,"-",4), 1, function(row) paste(row[c(1,3,4)], collapse="-"))
 
 HaploidCCcal <- calcCCmatrixHaploid(biphasicPedNH)
 
@@ -136,25 +120,13 @@ for (i in 1:nrow(biphasicPedNH)){
 
 rownames(biphasichapccMat)<-colnames(biphasichapccMat)<-pedinames
 
-biphasicmCCmat<-HaploidCCcal$mccMat ### This is the condensed hapCC matrix
-# This is identical to the biphasicmCCmat as it use the same function
-# biphasichapccMat_condense<-condenseHapCCmat(biphasichapccMat,hapOnePointer,dipTwoPointers)
 
-load("hMat_PedNH_CCmat_fndrMrkData_Both_PhotoScore23_WithSGP_866.rdata")
-biphasciCCmat<-aMat/2 # This is the CCmatrix estimated at diploid level
-library(cultevo)
-mantel.test(dist(as.matrix(biphasicmCCmat)),dist(as.matrix(aMat)),trials=99) # r=1
-mantel.test(dist(as.matrix(biphasicCCmat)),dist(as.matrix(biphasichapccMat_condense)),trials=99) # r=1
-
-biphasichapccMat[140:142,140:142]
 
 #### 3. GPs data
 load("/Users/maohuang/Desktop/Kelp/2020_2019_Phenotypic_Data/GenotypicData_for_SugarKelpBreeding/GPs_mainGenome_NA0.8_P1P2P3.Rdata")
 # GPSNP is raw SNPs
 
 load("/Users/maohuang/Desktop/Kelp/2020_2019_Phenotypic_Data/GenotypicData_Files_for_Phenotypic_Analysis/GPsAmat_NA0.8_P1P2P3_09282020.Rdata")
-  dim(imputedFromAmat)
-  imputedFromAmat[1:4,1:5]
 
 #### Need to redo the formating of the raw marker data again  
   GPs0<-GPSNP   # 
@@ -180,14 +152,8 @@ load("/Users/maohuang/Desktop/Kelp/2020_2019_Phenotypic_Data/GenotypicData_Files
   GPs1<-GPs[,!colnames(GPs)%in%IndiRM]
   GPs<-GPs1
   
-  #E. Impute GP marker matrix with A.mat()
+  #Impute GP marker matrix with A.mat()
   tSNP<-t(GPs)
-    dim(tSNP)
-  
-  #RMlist<-c("SL18-PI-1-FG1","SL18-CT1-FG3")
-  #GPsMrk<-imputedFromAmat[-which(rownames(imputedFromAmat)%in%RMlist),]
-  #dim(GPsMrk)
-
   tSNP[tSNP==2]=1  # Change to haploid level dosage
     
 #mrkMat needs to be m xn dimension
@@ -207,11 +173,14 @@ GPsMrkImp<-imputeToMean(tSNP)
   GPsMrkImp[1:4,1:5]
   tSNP[1:4,1:5]
   
+#Change GPs marker to 0, 1 format
+  
 onerow<-GPsMrkImp 
   onerow[onerow> 0 & onerow< 0.5]=0
   onerow[onerow>= 0.5 & onerow< 1]=1
   onerow[onerow> 1]=1  
 
+### Different ways of estimating GPsAs
 GPsA<-calcGenomicRelationshipMatrix(GPsMrkImp,ploidy=1)
 GPsA2<-calcGenomicRelationshipMatrix(onerow,ploidy=1) ### This function assumes data to be 0 and 1 for haploid
 
@@ -242,16 +211,18 @@ is.positive.definite(GPsA)
 diag(biphasichapccMat) <- diag(biphasichapccMat) + 1e-5
 is.positive.definite(biphasichapccMat)
 
-### RM the extra fndr individuals
+### RM the extra fndr individuals that's not in the pedigree list
 RMextraFndr<-which(!rownames(fndrA)%in%rownames(biphasichapccMat))
 fndrA2<-fndrA[-RMextraFndr,-RMextraFndr]
   dim(fndrA2)
   fndrA2[29:30,29:30]
-### Is GPsA2 individuals all in the biphasichapccMat?
+  
+### check and see Is GPsA2 individuals all in the biphasichapccMat?
 which(!rownames(GPsA2)%in%rownames(biphasichapccMat))  
 is.positive.definite(fndrA2)  
 save(fndrA2,GPsA2,biphasichapccMat,file="Newly_saved_3_As_for_CovComb.Rdata")
 save(hapOnePointer,dipTwoPointers,file="Pointers_from_biphasichapccMat.Rdata")
+
 ##{{Done in terminal}}
 CovList<-NULL
 CovList[[1]]<-fndrA2 ## fndrsA
@@ -268,22 +239,9 @@ outCovComb4_conden<-condenseHapCCmat(outCovComb4,hapOnePointer,dipTwoPointers)
 save(outCovComb4,outCovComb4_conden,file="outCovComb4_and_Conden.Rdata")
 ###{{}}
 
+hMat_hap<-outCovComb4_Hap<-outCovComb4_conden
+load(paste0("/Users/maohuang/Desktop/Kelp/2020_2019_Phenotypic_Data/Phenotypic_Analysis/TraitAnalyses200820_Updated_AfterCrossList/withSGP/hMat_PedNH_CCmat_fndrMrkData_Both_PhotoScore23_withSGP_866.rdata"))
+hMat_dip<-hMat
+mantel.test(dist(as.matrix(hMat_dip)),dist(as.matrix(hMat_hap)),trials=99)
 
-
-# run source code
-Kinit=biphasichapccMat
-Klist<-CovList
-Kinvlist=NULL
-Kinvlist<-lapply(Klist,solve)
-  dim(Kinvlist)
-
-linenames <- c()    
-for (i in seq_len(length(Kinvlist))){
-    linenames <- union(linenames, rownames(Kinvlist[[i]]))
-  }
-
-Kinit <- Kinit[match(linenames, colnames(Kinit)), match(linenames, 
-                                                        rownames(Kinit))]/nu
-  
-
-#save(fndrA,GPsA2,biphasichapccMat,file="All_3_RelationshipMatrices.Rdata")
+## Went to Step3_Cleaned_V2 for h2 estimation
