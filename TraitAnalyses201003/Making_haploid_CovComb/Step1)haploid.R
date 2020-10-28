@@ -4,12 +4,13 @@
 #### Cal relationship matrix for the fnders
 #### 2. Cal hapccMatrix for the pedigree
 #### 3. GPs relationship matrix, 0->0,2->1
-#### 4. Use CovComb() to combine this Founder relationship gmat, and the GP sequenced amat and the PedNH
+#### 4. Use CovComb() to combine this Founder relationship amat, and the GP sequenced amat and the PedNH ccmatrix
+#### 5. condense to diploid level
+#######
 
-###########################  
-## function to make diploid marker data to be haploid
-# ##################!!!!!! This is for haploid
-######### Two row format
+#### function to make diploid marker data to be haploid
+#!!!!!! This is for haploid
+######### Diploid split into 2 rows (onerow at a time) format
 ConvertOneRow<-function(fndrMrkDataImp){
 onerow<-fndrMrkDataImp
 onerow[onerow< -1]=-1
@@ -21,8 +22,7 @@ onerow[onerow> 1]=1
 ### Two row format for haploid
 geno3<-onerow
 geno3[geno3==-1]=0
-#geno3[geno3==0]=0
-#geno3[geno3==1]=1
+
 geno4<-onerow
 geno4[geno4==1]=1
 geno4[geno4==0]=1
@@ -47,11 +47,10 @@ for (i in 1:nrow(geno4)){
 
 return(list(OneRowG=genoC))
 }
-# ##################### 
+#####
 
-#### 1. ####
+#### 1. fnder marker data
 load("FarmCPU_GAPIT.Rdata")
-#write.csv(geno2$taxa,"Fndr_Crossed_genotyped_Dart1.csv")
 ls()
 geno2<-geno[,-1]
 rownames(geno2)<-geno$taxa
@@ -62,25 +61,27 @@ geno2[geno2==0]=-1
 geno2[geno2==1]=0
 geno2[geno2==2]=1
 
-####### !!!!!
-geno2<-geno2[rownames(geno2)%in%CrossedSP,]  # 93 fnders made crosses, only 56 were genotyped
+#######Did not do this step, 
+#so some fnders were not in the pedigree file but were included to estimate aMat, they were removed out later
+#though this should not be an issue??
+#######
+#geno2<-geno2[rownames(geno2)%in%CrossedSP,]  # 93 fnders made crosses, only 56 were genotyped
 #write.csv(rownames(geno2),"Fndrs_genotyped_Samples.csv")
+
 fndrMrkData<-geno2
 
+## Impute fndr Mrk at diploid level
 mrkRelMat <- A.mat(fndrMrkData, impute.method="EM", return.imputed=T,shrink=TRUE) ## Add shrink per Deniz
 fndrMrkDataImp <- mrkRelMat$imputed
-#fndrEMA<- mrkRelMat$A  ####### Fnder Amat in EM algorithm at diploid level
-#  dim(fndrEMA)  ##
 
 fndOneRow<-ConvertOneRow(fndrMrkDataImp)$OneRowG
   dim(fndOneRow)
   fndOneRow[1:4,1:5]  
   dim(fndrMrkDataImp)
 
-  
-  # Calculate GRM as (W %*% W^T) / sum(locusDosageVariance)
-  # To calculate p, the function expects dosage coding to be 0, 1, 2 for diploid
-  # and 0, 1 for haploid
+# Calculate GRM as (W %*% W^T) / sum(locusDosageVariance)
+# To calculate p, the function expects dosage coding to be 0, 1, 2 for diploid
+# and 0, 1 for haploid
   calcGenomicRelationshipMatrix <- function(locusMat, ploidy=2){
     if (!any(ploidy == 1:2)) stop("Ploidy must be 1 or 2")
     freq <- colMeans(locusMat) / ploidy
@@ -114,14 +115,13 @@ biphasicPedNH<-as.matrix(biphasicPedNH)
 #library(stringr)
 #rownames(biphasicPedNH)[namesNum]<-apply(str_split_fixed(namesLS,"-",4), 1, function(row) paste(row[c(1,3,4)], collapse="-"))
 
-
 HaploidCCcal <- calcCCmatrixHaploid(biphasicPedNH)
 
 biphasichapccMat<-HaploidCCcal$hccMat   ###!!! 2. CCmatrix/aMat at haploid level for pedigree
 hapOnePointer<-HaploidCCcal$hapOnePointer  ###!!! For condensing
 dipTwoPointers<-HaploidCCcal$dipTwoPointers  ###!!! For condensing
 
-### This is to ass the names out of the biphasichapccMat?
+### This is to rename the rownames out of the biphasichapccMat
 pedinames<-NULL
 for (i in 1:nrow(biphasicPedNH)){
   if(!is.na(biphasicPedNH[i,2]) & !is.na(biphasicPedNH[i,3])){
@@ -148,7 +148,7 @@ mantel.test(dist(as.matrix(biphasicCCmat)),dist(as.matrix(biphasichapccMat_conde
 
 biphasichapccMat[140:142,140:142]
 
-#### 3. ####
+#### 3. GPs data
 load("/Users/maohuang/Desktop/Kelp/2020_2019_Phenotypic_Data/GenotypicData_for_SugarKelpBreeding/GPs_mainGenome_NA0.8_P1P2P3.Rdata")
 # GPSNP is raw SNPs
 
