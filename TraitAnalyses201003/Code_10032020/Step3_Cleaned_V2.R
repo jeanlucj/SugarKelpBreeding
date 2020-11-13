@@ -1218,4 +1218,14 @@ bestGP_idx <- allBLUPsDF[releaseGP,][order(allBLUPsDF$index[releaseGP], decreasi
 bestGP_idx[,-(1:2)] <- bestGP_idx[,-(1:2)] %>% round(3)
 write.table(bestGP_idx[,-1], paste0("BestGPbyDWpMandPDW_",yr,"_PhotoScore23.txt"), quote=F, row.names=T, col.names=T)
 
+### save file to Diego
+load("outCovComb4_10012020_withSGP.Rdata")
+keep<-rownames(outCovComb4)[1:15]
+dipkeep<-which(rownames(outCovComb4)%in%keep)
+hapkeep<-grep(paste(c("OI","LD"), collapse="|"),rownames(outCovComb4))
+outCovSample<-outCovComb4[c(dipkeep,hapkeep),c(dipkeep,hapkeep)]
+other<-c("NL","CB","SF","CC","JS","NC","LL")
+haprm<-grep(paste(other,collapse="|"),rownames(outCovSample))
+outCovSample2<-outCovSample[-haprm,-haprm]
 
+write.csv(outCovSample2,"outCovSample_TODiego.csv")
