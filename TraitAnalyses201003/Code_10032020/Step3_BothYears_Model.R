@@ -29,7 +29,8 @@ yr<-"Both"
 
 #load(paste0("hMat_PedNH_CCmat_fndrMrkData_",yr,"_PhotoScore23.rdata"))
 #load(paste0("hMat_PedNH_CCmat_fndrMrkData_Both_PhotoScore23_NoSGP.rdata"))
-  load(paste0("hMat_PedNH_CCmat_fndrMrkData_Both_PhotoScore23_withSGP.rdata"))
+#load(paste0("hMat_PedNH_CCmat_fndrMrkData_Both_PhotoScore23_withSGP.rdata")) # this is only 754 lines
+  load(paste0("hMat_PedNH_CCmat_fndrMrkData_Both_PhotoScore23_WithSGP_866.rdata")) 
 
 spRows <- which(apply(biphasicPedNH[,2:3], 1, function(vec) all(vec > 0)))    ### Progeny sps, col 2 and 3 are all values
 nSp <- length(spRows)
@@ -127,7 +128,8 @@ nrowchk<-nrow(dataNHpi) - nrowplot
 
 #load("outCovComb4_09282020.Rdata")
 
-load("outCovComb4_10012020.Rdata")
+#load("outCovComb4_10012020.Rdata")
+load("outCovComb4_10012020_withSGP.Rdata")
 
 outCovComb<-outCovComb4   ###!!!!!!
   dim(outCovComb)
@@ -150,7 +152,7 @@ heritability <- function(msOut){
   return(msOut$Vu / (msOut$Vu + msOut$Ve))
 }
 
-write.csv(dataNHpi,paste0("dataNHpi_Last_Used_in_Model_",yr,".csv"))
+write.csv(dataNHpi,paste0("dataNHpi_Last_Used_in_Model_",yr,"11172020.csv"))
 
 ########### 6. FINALE !! RUN Model WITHOUT blade density as covariate, but use hMat as the relationship matrx
 
@@ -166,6 +168,11 @@ hMat<-outCovComb4 ###!!!!!!!!!aMatInitial,weight!!!!!!!!!!!!!
   # dataNHpi$AshFDwPM=AshFDwPMImpute
   
   dataNHpi<-droplevels(dataNHpi) 
+  
+  #msX1 <- model.matrix( ~ line+block, data=dataNHpi)  ### !!!! No popChk because no checks for ashes
+  #msX1 <- msX1[, apply(msX1, 2, function(v) !all(v == 0))]
+  
+  
   
   msX1 <- model.matrix( ~ line%in%Year+block%in%Year+Year, data=dataNHpi)  ### !!!! No popChk because no checks for ashes
   msX1 <- msX1[, apply(msX1, 2, function(v) !all(v == 0))]
@@ -191,8 +198,8 @@ hMat<-outCovComb4 ###!!!!!!!!!aMatInitial,weight!!!!!!!!!!!!!
   msOutDWPMh <- mixed.solve(y=log(dataNHpi$dryWgtPerM+1), Z=msZ, K=hMat, X=msX, SE=T)
   msOutPDWh <- mixed.solve(y=dataNHpi$percDryWgt, Z=msZ, K=hMat, X=msX, SE=T)
   
-  h2hMat <- c(heritability(msOutAshFDwPM),heritability(msOutWWPh), heritability(msOutDWPMh), heritability(msOutPDWh),heritability(msOutDBh))
-  names(h2hMat) <- c("AshFDwPM","wetWgtPlot", "dryWgtPerM", "percDryWgt","densityBladesPerM")
+  h2hMat <- c(heritability(msOutAshFDwPM),heritability(msOutAshOnly),heritability(msOutWWPh), heritability(msOutDWPMh), heritability(msOutPDWh),heritability(msOutDBh))
+  names(h2hMat) <- c("AshFDwPM","AshOnly","wetWgtPlot", "dryWgtPerM", "percDryWgt","densityBladesPerM")
       round(h2hMat,3) 
       
   

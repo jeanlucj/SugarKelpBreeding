@@ -29,6 +29,8 @@ head(dataNHpiBoth_C)
 ####
 load(paste0("/Users/maohuang/Desktop/Kelp/2020_2019_Phenotypic_Data/Phenotypic_Analysis/TraitAnalyses200820_Updated_AfterCrossList/withSGP/hMat_PedNH_CCmat_fndrMrkData_Both_PhotoScore23_withSGP_866.rdata"))
 hMat_dip<-hMat
+
+#hap
 hMat_hap<-outCovComb4<-outCovComb4_conden
 library(cultevo)
 mantel.test(dist(as.matrix(hMat_dip)),dist(as.matrix(hMat_hap)),trials=99) # r=0.269???
@@ -85,10 +87,10 @@ nrowchk<-nrow(dataNHpi) - nrowplot
 #load("outCovComb4_09282020.Rdata")
 ##{{}}
 ##{{}}
-#load("outCovComb4_10012020_withSGP.Rdata")
+#load("/Users/maohuang/Desktop/Kelp/2020_2019_Phenotypic_Data/Phenotypic_Analysis/TraitAnalyses200820_Updated_AfterCrossList/withSGP/outCovComb4_10012020_withSGP.Rdata")
 
+#Hap
 load("/Users/maohuang/Desktop/Kelp/2020_2019_Phenotypic_Data/Phenotypic_Analysis/TraitAnalyses200820_Updated_AfterCrossList/withSGP/CovComb/outCovComb4_and_Conden.Rdata")
-
 rownames(outCovComb4_conden)<-rownames(biphasicPedNH)  
 outCovComb4<-outCovComb4_conden   ###!!!!!!
 
