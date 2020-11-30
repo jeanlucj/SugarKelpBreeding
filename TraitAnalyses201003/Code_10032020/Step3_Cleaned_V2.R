@@ -30,11 +30,25 @@ head(dataNHpiBoth_C)
 load(paste0("/Users/maohuang/Desktop/Kelp/2020_2019_Phenotypic_Data/Phenotypic_Analysis/TraitAnalyses200820_Updated_AfterCrossList/withSGP/hMat_PedNH_CCmat_fndrMrkData_Both_PhotoScore23_withSGP_866.rdata"))
 hMat_dip<-hMat
 
+load("/Users/maohuang/Desktop/Kelp/SugarKelpBreeding/TraitAnalyses201003/Making_haploid_CovComb/outCovComb4_and_Conden.Rdata")
 #hap
 hMat_hap<-outCovComb4<-outCovComb4_conden
 library(cultevo)
 mantel.test(dist(as.matrix(hMat_dip)),dist(as.matrix(hMat_hap)),trials=99) # r=0.269???
 ####
+
+low_hap<-c(hMat_hap[lower.tri(hMat_hap)])
+low_dip<-c(hMat_dip[lower.tri(hMat_dip)])
+
+hMat_hap2<-hMat_hap
+diag(hMat_hap2)<-NA
+
+hMat_dip2<-hMat_dip
+diag(hMat_dip2)<-NA
+
+cor(hMat_hap2[,2],hMat_dip2[,2],use="complete")
+
+
 
 spRows <- which(apply(biphasicPedNH[,2:3], 1, function(vec) all(vec > 0)))    ### Progeny sps, col 2 and 3 are all values
 nSp <- length(spRows)
