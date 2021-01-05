@@ -186,7 +186,7 @@ calcCCmatrixHaploid <- function(pedColumns){
 #'  diploid points to only one haploid parent.  A haploid has two pointers, one
 #'  to each haploid of its diploid parent.
 #'
-#' @param pedColumns A data.frame with three columns. The first column
+#' @param pedColumns A matrix with three columns. The first column
 #'  has to be the row number and sire and dam columns refer directly to rows
 #'  of the pedigree. Parents of founders need to be set to 0 (ZERO). The row
 #'  of a child has to be after (i.e. a higher row number) that of its parents.
