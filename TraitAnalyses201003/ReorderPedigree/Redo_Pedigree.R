@@ -90,29 +90,31 @@ str(unique(c(unique(c(unique(c(GP_seq_fndr,GP_Noseq_fndr)),GP_noPheno_fndr)),S_G
 S_GP_its_parentalGP<-unique(c(find_fnder_for_SGP(SPGPs$SPCross)$S_FGP,find_fnder_for_SGP(SPGPs$SPCross)$S_MGP))
 str(S_GP_its_parentalGP)
 
-#For 4, all S_GP_its_fnders were already included
-#For 1, to row64, For 2 row65 to row70, For 3 row71 to row93)
-#For 5, row 94 to row 104
-
-#### List of fnders for 1,2,3,4
-All_fnders1<-c(GP_seq_fndr,GP_Noseq_fndr,GP_noPheno_fndr,S_GP_its_fnders)  # 189
-str(All_fnders1)
-
-
 ###!!! 5. Adding GPs has biomass, but not in the field data (photo score >1) nor in the genotyped list
 GP_Add<-read.csv("AddGP_to_Pedi.csv",sep=",",header=T)
 colnames(GP_Add)<-"WBiomass_Name_InPheno"
-  head(GP_Add)
-  dim(GP_Add)
+head(GP_Add)
+dim(GP_Add)
 GP_Add_unique<-unique(as.character(GP_Add$WBiomass_Name_InPheno)) # 105
-  dim(GP_Add_unique)
-  str(GP_Add_unique)
+dim(GP_Add_unique)
+str(GP_Add_unique)
 
 # find their founders
 # themselves
 BiomassGP_fndr<-find_fnder_for_GP(GP_Add_unique)  
-str(BiomassGP_fndr[!BiomassGP_fndr%in%All_fnders_unique])
 
+#### List of fnders for 1,2,3,4
+All_fnders1<-c(GP_seq_fndr,GP_Noseq_fndr,GP_noPheno_fndr,S_GP_its_fnders)  # 189
+  str(All_fnders1)
+All_fnders1_unique<-unique(All_fnders1)  # 93
+  str(All_fnders1_unique)
+  
+str(BiomassGP_fndr[!BiomassGP_fndr%in%All_fnders1_unique])
+
+  #For 4, all S_GP_its_fnders were already included
+  #For 1, to row64, For 2 row65 to row70, For 3 row71 to row93)
+  #For 5, row 94 to row 104
+  
 All_fnders2<-c(All_fnders1,BiomassGP_fndr) #249
 
 #### List of fnders for 1,2,3,4,5
@@ -125,11 +127,10 @@ fndRow <- 1:nFounders
 names(fndRow) <- All_fnders_unique
 fndPed <- cbind(fndRow, 0, 0)   
 
-
-## GP_Add_unique: the Added_GPs that's not in genotyped nor phenotyped but had biomass
 All_GPs123<-c(GP_seq,GP_Noseq,GP_noPheno)
   str(All_GPs123)     # 338,
-  
+
+## GP_Add_unique: 5. the Added_GPs that's not in genotyped nor phenotyped but had biomass  
 GP_Add_unique<-GP_Add_unique[!GP_Add_unique%in%All_GPs123]  # 105->101
 
 All_GPs<-c(All_GPs123,GP_Add_unique)   # 439
@@ -147,12 +148,12 @@ names(GPsRow) <- All_GPs
 founderPar<-sapply(strsplit(All_GPs, split="-", fixed=T), function(vec) paste(vec[1:3], collapse="-"))
 GPsPed <- cbind(GPsRow, fndRow[founderPar], NA)
 
-## III. Ped for the SP plots in 3, aka photo score >1 plots, aka in kelpNamesColumns femaParx malePar          
+## III. Ped for the SP plots in 1/2, aka photo score >1 plots, aka in kelpNamesColumns femaParx malePar          
 sporProg1 <- 1:nrow(kelpNameColumns) + nrow(fndPed) + nrow(GPsPed)
 names(sporProg1)<-paste0(kelpNameColumns[,1],"x",kelpNameColumns[,2])
 progPed1 <- cbind(sporProg1, GPsRow[kelpNameColumns[,1]], GPsRow[kelpNameColumns[,2]]) # row 432 to row 675 (431+244)           
 
-## IV. Ped for the SP_GP's plots that were not in 3        
+## IV. Ped for the SP_GP's plots that were not in 1/2        
 # The SPplots not listed in the kelpNameColumns combination (because their plot photo score may not pass 1)
 sproProg2Name<-unique(droplevels(SPGPs$SPCross[!SPGPs$SPCross%in%names(sporProg1)]))        
 sproProg2<-1:length(sproProg2Name)+nrow(fndPed)+nrow(GPsPed)+nrow(progPed1)
