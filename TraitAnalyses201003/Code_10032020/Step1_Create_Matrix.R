@@ -27,7 +27,7 @@
 
 #dataNHpi <-read.csv("dataNHpi_ManuallyAddGrowth_07202020.csv",sep=",",header=TRUE) 
 
-
+setwd("/Users/maohuang/Desktop/Kelp/SugarKelpBreeding/TraitAnalyses201003/ReorderPedigree")
 rm(list=ls())
   ls()
 library(magrittr)
@@ -47,7 +47,7 @@ dataAll$popChk <- ifelse(substr(dataAll$plotNo, 1, 1) == "Z", substr(dataAll$plo
 
   ls()
   head(dataAll)
-  dataAll[1:10,]
+  dataAll[1:10,] #616
 
 ########################### A. Plot level data input, estimate pedNH
 dataNHpi<-dataAll[dataAll$Region=="GOM",] ## !!! RM SNE, 530 rows
@@ -80,7 +80,7 @@ dataNHpi_rmChk<-dataNHpi[!dataNHpi$crossID=="Check",]
 FMGPs<-unique(c(as.character(dataNHpi_rmChk$femaPar),as.character(dataNHpi_rmChk$malePar)))
 SPs<-strsplit(as.character(FMGPs), split="-", fixed=T)
 CrossedSP<-unique(sapply(SPs, function(vec) paste(vec[1:3], collapse="-"))) #93 of the unique fndrs used in making crosses
-  str(FMGPs)  # 390 unique GPs being used in crosses
+  str(FMGPs)  # 227 unique GPs being used in crosses
   head(CrossedSP)
   str(CrossedSP)
   tail(CrossedSP)
@@ -153,7 +153,7 @@ dataNHpiBoth<-dataNHpi[!dataNHpi$crossID=="Check",]
   dim(dataNHpi20)  #128
   dim(dataNHpiBoth)  #250
 ######################################################################  
-### Make pedigree relationship matrix  !!!!!!!!!! RUN 3 TIMES !!!!!! 
+### Make pedigree relationship matrix  !!!!!!!!!! RUN 3 TIMES for 3 data sets !!!!!! 
 
 #1. Create the pedigree
 source("makeBiphasicPed.R")
@@ -181,6 +181,7 @@ kelpNameColumns$RM<-paste0(kelpNameColumns[,1],"x",kelpNameColumns[,2])
 kelpNameColumns<-kelpNameColumns[!duplicated(kelpNameColumns$RM),]
 kelpNameColumns<-kelpNameColumns[,-3]
 
+##### This is first step, using the list of FG and MG used in crossing, for generating the dataNHpi
 biphasicPedNH <- makeBiphasicPed(kelpNameColumns, rownames(mrkRelMat)) #### The rownames(mrkRelMat) is to put the fndrs in the front in the pedigree matrix
   head(kelpNameColumns)
   head(rownames(mrkRelMat))
@@ -199,7 +200,7 @@ nSp <- length(spRows)
   str(fndRows)
 
   
-##### V I. Add additional GPs genotyped, wfndr, woutfndr  
+##### V I. Add additional GPs genotyped, wfndr, woutfndr  (Step 2)
 ### Add in the list of GPs being genotyped but are not in the crosses from 3 plates 
 
 GPsequencedAll<-read.csv("3_plates_sequenced_names.csv",sep=",",header=T)
@@ -282,7 +283,7 @@ biphasicPedNH<-rbind(biphasicPedNH0,GPseq_wfndr_Ped,GPseq_newfndr_Ped,GPseq_wout
 ######### {{}}
   
   
-#####{} V.II Add the S plots into the pedigree  
+#####{} V.II Add the S plots into the pedigree  (Step 3, these are the GPs came out of the 2019 S-plots)
 summary<-read.csv("Active_culture_biomass_assesment_for_Mao_100120.csv",sep=",",header=T,na.strings=c("","NA"))  
   dim(summary)  
   head(summary)
@@ -317,7 +318,7 @@ write.csv(SPGPs0,"SPGPs0.csv")
 SPGPs<-SPGPs_ls
 SPGPs$Parent<-vlookup(SPGPs$GametophyteID,dict=SPGPs0,result_column = "Parent",lookup_column="GametophyteID")
 
-SPGPs$Parent<-vlookup(SPGPs$GametophyteID,dict=SPGPs0,result_column = "Parent",lookup_column="GametophyteID")
+#SPGPs$Parent<-vlookup(SPGPs$GametophyteID,dict=SPGPs0,result_column = "Parent",lookup_column="GametophyteID")
   head(SPGPs)
   dim(SPGPs)
 
@@ -329,7 +330,7 @@ SPGPs$SPCross<-vlookup(SPGPs$Parent,dict=dataAll,result_column="Crosses",lookup_
 SPGPs$GametophyteID<-as.character(SPGPs$GametophyteID)  
 ## IF there is any SP_GP that did not have a plotlevel cross in the biphasicPed (its fndr, Plotcross)
   ## That would make it more complicated. # Those NA SP_plot needs: fndr,plot,SP_GP\
-
+    #### SPGPs has the list of SP_GPs to be included
 
 # ## RM the row with all NAs
 ####
@@ -408,7 +409,6 @@ biphasicPedNH<-rbind(biphasicPedNH1,SPGP_withPlotpedi,SP_GP_NA_parent_pedi,SP_GP
 
   #biphasicPedNH1<-biphasicPedNH
   #biphasicPedNH<-rbind(biphasicPedNH1,SPGP_withPlotpedi)
-
   
   ######## Adding GPs has biomass not in the biPhasic list
   GPsequencedAll<-read.csv("AddGP_to_Pedi.csv",sep=",",header=T)
@@ -423,6 +423,10 @@ biphasicPedNH<-rbind(biphasicPedNH1,SPGP_withPlotpedi,SP_GP_NA_parent_pedi,SP_GP
   
   
 write.csv(biphasicPedNH,"biphasiPedNH_addmoreGP_866.csv")  
+  
+
+
+  
   
 # #### Checks Need to !!! run the {{}} part
 # Checks<-read.csv("Checks_2019_2020.csv",sep=",",header=T)

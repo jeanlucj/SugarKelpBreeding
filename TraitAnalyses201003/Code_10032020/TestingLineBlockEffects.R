@@ -38,6 +38,7 @@ dataNHpi19_C<-dataNHpi19_C[order(dataNHpi19_C$plotNo),]  ## Order plotNo alphabe
 
 
 dataNHpi<-dataNHpi19_C  ##!!!!!
+
 library(lme4)
 exptlSP <- as.character(dataNHpi$popChk) == "ES"
 dataNHpi$entry <- as.character(dataNHpi$popChk)
@@ -60,7 +61,7 @@ print(aov <- anova(fitAug))
 #block      0.049054 0.0061317     8 139.696  0.6674 0.7195
 #line:block 0.168385 0.0070161    24 129.949  0.7636 0.7751
 
-fitAug <- lmer(wetWgtPlot ~ popChk + line*block + (1|entry:group), data=dataNHpi)
+fitAug <- lmer(wetWgtPlot ~ popChk + line*block + (1|entry:group), data=dataNHpi) ##!!!popChk and group is identical
 print(aov <- anova(fitAug))
 #Type III Analysis of Variance Table with Satterthwaite's method
 #            Sum Sq Mean Sq NumDF   DenDF F value Pr(>F)
