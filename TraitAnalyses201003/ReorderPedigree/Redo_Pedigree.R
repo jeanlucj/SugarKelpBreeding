@@ -169,8 +169,8 @@ nrow(SPGPs)==length(unique(SPGPs$GametophyteID))
 SP_GP_row<-1:nrow(SPGPs)+nrow(fndPed)+nrow(GPsPed)+nrow(progPed)
 names(SP_GP_row)<-SPGPs$GametophyteID
 SP_GP_Ped<-cbind(SP_GP_row,spRows[as.character(SPGPs$SPCross)],NA)
-head(SP_GP_Ped)
-
+  head(SP_GP_Ped)
+  tail(SP_GP_Ped)
 
 
 
@@ -178,6 +178,6 @@ Ped_in_Order<-rbind(fndPed,GPsPed,progPed,SP_GP_Ped)
 dim(Ped_in_Order)
 write.csv(Ped_in_Order,"Ped_in_Order_866_Individuals.csv")
 
-
+biphasicPedNH<-Ped_in_Order
 
   

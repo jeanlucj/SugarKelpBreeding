@@ -47,11 +47,11 @@ dataAll$popChk <- ifelse(substr(dataAll$plotNo, 1, 1) == "Z", substr(dataAll$plo
 
   ls()
   head(dataAll)
-  dataAll[1:10,] #616
-
+  dataAll[1:10,] 
+  dim(dataAll)  #616
 ########################### A. Plot level data input, estimate pedNH
 dataNHpi<-dataAll[dataAll$Region=="GOM",] ## !!! RM SNE, 530 rows
-
+  dim(dataNHpi)
 dataNHpi <- dataNHpi[order(dataNHpi$plotNo),]  #### Plots in alphabetic order
   dim(dataNHpi)
   str(dataNHpi)    
@@ -59,7 +59,7 @@ dataNHpi<-dataNHpi[!dataNHpi$crossID=="Buffer",]  ## !!! RMed Buffer lines
 
 #dataNHpi<-dataNHpi[!dataNHpi$PhotoScore==0,] ## !!! RM PhotoScore=0,  447 rows
 dataNHpi<-dataNHpi[dataNHpi$PhotoScore>1,] ## !!! RM PhotoScore<=1
-  dim(dataNHpi)
+  dim(dataNHpi)   # 283
   colnames(dataNHpi)
 dataNHpi19<-dataNHpi[dataNHpi$Year==2019,] ## 2019 data   !!!!!!
 dataNHpi19_C<-dataNHpi19
@@ -74,12 +74,13 @@ dataNHpiBoth_C<-dataNHpiBoth_C[order(dataNHpiBoth_C$plotNo),] ## Order plotNo al
 
 save(dataNHpi19_C,dataNHpi20_C,dataNHpiBoth_C,file="dataNHpi_withChk_3_sets_PhotoScore23.rdata")
 
+
 ############################## Run it Only Once !!!! Fndrs Amat
 ##############3 RM "checks"
-dataNHpi_rmChk<-dataNHpi[!dataNHpi$crossID=="Check",]
+dataNHpi_rmChk<-dataNHpi[!dataNHpi$crossID=="Check",]    # 250
 FMGPs<-unique(c(as.character(dataNHpi_rmChk$femaPar),as.character(dataNHpi_rmChk$malePar)))
 SPs<-strsplit(as.character(FMGPs), split="-", fixed=T)
-CrossedSP<-unique(sapply(SPs, function(vec) paste(vec[1:3], collapse="-"))) #93 of the unique fndrs used in making crosses
+CrossedSP<-unique(sapply(SPs, function(vec) paste(vec[1:3], collapse="-"))) #70 of the unique fndrs used in making crosses for GOM, adding SNE it is 90 of them
   str(FMGPs)  # 227 unique GPs being used in crosses
   head(CrossedSP)
   str(CrossedSP)
@@ -98,16 +99,16 @@ geno2[geno2==0]=-1
 geno2[geno2==1]=0
 geno2[geno2==2]=1
   
-geno2<-geno2[rownames(geno2)%in%CrossedSP,]  # 93 fnders made crosses, only 56 were genotyped
+geno2<-geno2[rownames(geno2)%in%CrossedSP,]  # 70 fnders made crosses, only 47 were genotyped
   #write.csv(rownames(geno2),"Fndrs_genotyped_Samples.csv")
 fndrMrkData<-geno2
   
 mrkRelMat <- A.mat(fndrMrkData, impute.method="EM", return.imputed=T,shrink=TRUE) ## Add shrink per Deniz
 fndrMrkDataImp <- mrkRelMat$imputed
 mrkRelMat <- mrkRelMat$A  ####### !!! 1. Fnder Amat
-  dim(mrkRelMat)  #56 x 56
+  dim(mrkRelMat)  #47 x 47  !!!!!!!
   #write.csv(rownames(mrkRelMat),"Fndrs_used_in_Amat.csv")
-  
+  save(mrkRelMat,file="fndr_mrkRelMat.Rdata") 
 ###########################  
   
   # ##################!!!!!! This is for haploid
@@ -152,6 +153,11 @@ dataNHpiBoth<-dataNHpi[!dataNHpi$crossID=="Check",]
   dim(dataNHpi19) #122
   dim(dataNHpi20)  #128
   dim(dataNHpiBoth)  #250
+  
+  
+  
+  
+###### Below is to make the biphasicPedNH file, which is now reordered and remade in Redo_Pedigree.R   
 ######################################################################  
 ### Make pedigree relationship matrix  !!!!!!!!!! RUN 3 TIMES for 3 data sets !!!!!! 
 
@@ -458,6 +464,8 @@ write.csv(biphasicPedNH,"biphasiPedNH_addmoreGP_866.csv")
   
 # 2.Calculate the CC matrix: relationship matrix
 source("calcCCmatrixBiphasic.R")
+biphasicPedNH<-read.csv("Ped_in_Order_866_Individuals.csv",sep=",",header=TRUE,row.names=1)
+
 biphasicCCmat <- calcCCmatrixBiphasic(biphasicPedNH)  #### !!!!!!! Update into calcCCmatrixHaploid() ?????
 rownames(biphasicCCmat) <- colnames(biphasicCCmat) <- rownames(biphasicPedNH)
 
@@ -476,6 +484,8 @@ rownames(biphasicCCmat) <- colnames(biphasicCCmat) <- rownames(biphasicPedNH)
 aMat <- 2 * biphasicCCmat
   dim(aMat)  ###### !!! 3. Pedigree based CC matrix
 
+save(aMat,file="Re_order_aMat.Rdata")
+  
 # fndRows <- which(apply(biphasicPedNH[,2:3], 1, function(vec) all(vec == 0)))  ### Founders, which() only keeps the TRUE ones
 # gpRows <- which(apply(biphasicPedNH[,2:3], 1, function(vec) is.na(vec[2])))   ### GPs, the col 3 is NA
 # spRows <- which(apply(biphasicPedNH[,2:3], 1, function(vec) all(vec > 0)))    ### Progeny sps, col 2 and 3 are all values
@@ -486,7 +496,7 @@ aMat <- 2 * biphasicCCmat
 #   length(fndRows)+length(gpRows)+length(spRows) #294; 361; 550
 
 hMat <- calcHmatrix(mrkRelMat, aMat, aMatFounders=rownames(mrkRelMat))
-save(mrkRelMat,aMat,hMat,biphasicPedNH,biphasicCCmat,fndrMrkData, file=paste0("hMat_PedNH_CCmat_fndrMrkData_",yr,"_PhotoScore23_WithSGP_866.rdata"))  ###### !!!!!!!
+save(mrkRelMat,aMat,hMat,biphasicPedNH,biphasicCCmat,fndrMrkData, file=paste0("hMat_PedNH_CCmat_fndrMrkData_",yr,"_PhotoScore23_WithSGP_866_Reorder_Pedigree.rdata"))  ###### !!!!!!!
 
 
 
@@ -521,6 +531,75 @@ dataNHimboth_C<-dataNHimboth_C[order(dataNHimboth_C$plotNo),]
 
 save(dataNHim19_C,dataNHim20_C,dataNHimboth_C,file="dataNHim_withChk_3_sets_PhotoScore0123.rdata")
 #### !!!! This individual dataset still HAS the photoscore < 2,3 plots
+
+
+####### Calculating the outCovComb
+source("/Users/maohuang/Desktop/Kelp/2020_2019_Phenotypic_Data/Phenotypic_Analysis/TraitAnalyses200820_Updated_AfterCrossList/withSGP/is.square.matrix.R")
+source("/Users/maohuang/Desktop/Kelp/2020_2019_Phenotypic_Data/Phenotypic_Analysis/TraitAnalyses200820_Updated_AfterCrossList/withSGP/is.positive.definite.R")
+source("/Users/maohuang/Desktop/Kelp/2020_2019_Phenotypic_Data/Phenotypic_Analysis/TraitAnalyses200820_Updated_AfterCrossList/withSGP/is.symmetric.matrix.R")
+
+load("/Users/maohuang/Desktop/Kelp/2020_2019_Phenotypic_Data/SugarKelpBreeding_NoGitPush/GenotypicData_for_SugarKelpBreeding/GPsAmat_NA0.8_P1P2P3_09282020.Rdata")
+# Further reduced the "SL18-LD-13-Mg-3"
+GPsA<-GPsA[!rownames(GPsA)=="SL18-LD-13-Mg-3",!colnames(GPsA)=="SL18-LD-13-Mg-3"]
+
+GPsA<-round(GPsA,digits=5)   ### 2.GPs A
+diag(GPsA) <- diag(GPsA) + 1e-5
+is.positive.definite(GPsA)  # GPsA2 calculated by hand (above)
+  dim(GPsA)    #
+
+load("fndr_mrkRelMat.Rdata")  
+fndrsA<-round(mrkRelMat)     ### Added "shrink=TRUE" when estimating the mrkRelMat2
+diag(fndrsA) <- diag(fndrsA) + 1e-5
+is.positive.definite(fndrsA)   ### 1. fnders A
+  dim(fndrsA)
+
+load("Re_order_aMat.Rdata")
+diag(aMat) <- diag(aMat) + 1e-5
+is.positive.definite(aMat)     ### 3. pedigree
+
+  dim(fndrsA) # 47 x 47
+  dim(GPsA)  # 278 x 278
+  dim(aMat)  # 866 x 866
+  
+save(fndrsA,GPsA,aMat,file="CovList_3_As_0112_2021.Rdata")
+
+# Run this in terminal
+#This was where old files were calculated
+#setwd("/local/workdir/mh865/SNPCalling/Saccharina_latissima/bamAll/bam/mpileup/Filtering/CovComb")
+
+setwd("/local/workdir/mh865/outCovComb/")
+load("CovList_3_As_0112_2021.Rdata")
+
+library(CovCombR)
+
+
+sum(rownames(fndrsA)==colnames(fndrsA))
+sum(rownames(GPsA)==colnames(GPsA))  # 278
+sum(rownames(aMat)==colnames(aMat))
+sum(rownames(fndrsA)%in%rownames(aMat))
+sum(rownames(GPsA)%in%rownames(aMat))  # 270  !///!! This became a problem
+
+GPsA_2<-GPsA[rownames(GPsA)%in%rownames(aMat),colnames(GPsA)%in%colnames(aMat)]
+dim(GPsA_2)
+GPsA_2[1:4,1:5]
+write.csv(rownames(GPsA)[!rownames(GPsA)%in%rownames(aMat)],"GPsA_not_in_aMat.csv")
+
+### 1. NO initial, 3-list
+CovList<-NULL
+CovList[[1]]<-fndrsA ## fndrsA
+CovList[[2]]<-GPsA_2  ## Further RMed the "SL18-LD-13-Mg-3"
+CovList[[3]]<-aMat   
+
+### 4. amat initial, 3-list, add weight
+weights<-c(2,2,1)
+outCovComb4<-CovComb(CovList,nu=1500,w=weights,Kinit=aMat) 
+
+save(outCovComb1,outCovComb3,outCovComb4,file="outCovComb_files_0112_2021.Rdata")
+
+
+######### Calculating this on a haploid base
+
+
 
 
 
