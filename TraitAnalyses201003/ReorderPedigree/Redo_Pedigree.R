@@ -20,7 +20,6 @@ load("FarmCPU_GAPIT.Rdata")
   # E. "geno": the marker matrix for genotyped 2018 fnders
 geno2<-geno[,-1]
 rownames(geno2)<-geno$taxa
-  geno2[1:5,1:6]
   dim(geno2)  #125  
 rownames(geno2) <- paste0(substring(rownames(geno2), first=1, last=2), "18", substring(rownames(geno2), first=3))
   ls()
@@ -36,7 +35,6 @@ source("/Users/maohuang/Desktop/Kelp/2020_2019_Phenotypic_Data/Phenotypic_Analys
 ###4 GP from 2019S_plot level
 ###5 other GP had biomass,not genotyped and not crossed
 
-
   str(GPsequenced)  # 270
   str(kelpNameColumns)  # 244
   str(unique(GPsequenced)) #270
@@ -45,22 +43,20 @@ source("/Users/maohuang/Desktop/Kelp/2020_2019_Phenotypic_Data/Phenotypic_Analys
 
 ##1 
 FG_seq<-unique(kelpNameColumns$femaPar[kelpNameColumns$femaPar%in%GPsequenced]) #68
-  str(FG_seq)
+
 MG_seq<-unique(kelpNameColumns$malePar[kelpNameColumns$malePar%in%GPsequenced]) #91
-  str(MG_seq)
 
 GP_seq<-c(FG_seq,MG_seq)   # a Unique list for GPs in 1
 ##2
 FG_Noseq<-unique(kelpNameColumns$femaPar[!kelpNameColumns$femaPar%in%GPsequenced]) #38
-  str(FG_Noseq)
+
 MG_Noseq<-unique(kelpNameColumns$malePar[!kelpNameColumns$malePar%in%GPsequenced]) #30
-  str(MG_Noseq)
 
 GP_Noseq<-c(FG_Noseq,MG_Noseq)  # a Unique list for GPs in 2
 
 ##3  
 GP_noPheno<-GPsequenced[!GPsequenced%in%c(kelpNameColumns$femaPar,kelpNameColumns$malePar)] #111
-  str(GP_noPheno)             # a Unique list for GPs in 3
+           # a Unique list for GPs in 3
 
 ##4 
 S_GP<-SPGPs$GametophyteID
@@ -102,16 +98,13 @@ find_fnder_for_SGP<-function(S_GPCross){
 
 
 S_GP_its_fnders<-c(find_fnder_for_SGP(SPGPs$SPCross)$S_FGP_fndr,find_fnder_for_SGP(SPGPs$SPCross)$S_MGP_fndr)
-  str(S_GP_its_fnders)
   str(unique(c(unique(c(unique(c(GP_seq_fndr,GP_Noseq_fndr)),GP_noPheno_fndr)),S_GP_its_fnders))) # 93 
 
 S_GP_its_parentalGP<-unique(c(find_fnder_for_SGP(SPGPs$SPCross)$S_FGP,find_fnder_for_SGP(SPGPs$SPCross)$S_MGP))
-  str(S_GP_its_parentalGP)
+
 
 ###!!! 5. Adding GPs has biomass, but not in the field data (photo score >1) nor in the genotyped list
 GP_Add_unique<-unique(as.character(GP_Add$WBiomass_Name_InPheno)) # 105
-  dim(GP_Add_unique)
-  str(GP_Add_unique)
 
 # find their founders
 # themselves
@@ -119,10 +112,7 @@ BiomassGP_fndr<-find_fnder_for_GP(GP_Add_unique)
 
 #### List of fnders for 1,2,3,4
 All_fnders1<-c(GP_seq_fndr,GP_Noseq_fndr,GP_noPheno_fndr,S_GP_its_fnders)  # 189
-  str(All_fnders1)
 All_fnders1_unique<-unique(All_fnders1)  # 93
-  str(All_fnders1_unique)
-  
   str(BiomassGP_fndr[!BiomassGP_fndr%in%All_fnders1_unique])
 
   #For 4, all S_GP_its_fnders were already included
@@ -139,10 +129,8 @@ All_fnders_unique<-unique(All_fnders2)   #104
 
 ## Use Input file E. geno2to Re-order fnders
 geno2<-geno2[rownames(geno2)%in%All_fnders_unique,]  # 58
-  dim(geno2)
   #geno2<-geno2[rownames(geno2)%in%CrossedSP,] This only gave 47 fndrs being "both genotyped, and crossed to make SP <PhotoScore>1)
-  # # The fndrs list previously used, only kept 47 of them that had genotypic data +photo score >1
-  # # load("CovList_3_As_0112_2021.Rdata")
+  # # The fndrs list previously used, only kept 47 of them that had genotypic data +photo score >1. In "CovList_3_As_0112_2021.Rdata"
   ##### This will be ready for outCovComb
 fndrMrkData<-geno2
 mrkRelMat <- A.mat(fndrMrkData, impute.method="EM", return.imputed=T,shrink=TRUE) ## Add shrink per Deniz
@@ -188,8 +176,7 @@ fndRow <- 1:nFounders
 names(fndRow) <- All_fnders_unique
 fndPed <- cbind(fndRow, 0, 0)   
 
-All_GPs123<-c(GP_seq,GP_Noseq,GP_noPheno)
-  str(All_GPs123)     # 338,
+All_GPs123<-c(GP_seq,GP_Noseq,GP_noPheno)   # 338
 
 ## GP_Add_unique: 5. the Added_GPs that's not in genotyped nor phenotyped but had biomass  
 GP_Add_unique<-GP_Add_unique[!GP_Add_unique%in%All_GPs123]  # 105->101
@@ -230,12 +217,8 @@ nrow(SPGPs)==length(unique(SPGPs$GametophyteID))
 SP_GP_row<-1:nrow(SPGPs)+nrow(fndPed)+nrow(GPsPed)+nrow(progPed)
 names(SP_GP_row)<-SPGPs$GametophyteID
 SP_GP_Ped<-cbind(SP_GP_row,spRows[as.character(SPGPs$SPCross)],NA)
-  head(SP_GP_Ped)
-  tail(SP_GP_Ped)
-
   
 Ped_in_Order<-rbind(fndPed,GPsPed,progPed,SP_GP_Ped)  
-  dim(Ped_in_Order)
 write.csv(Ped_in_Order,"Ped_in_Order_866_Individuals_Fndr_New_Order_0116_2021.csv")
 
 ### calculate the aMat (pedigree based relationship matrix)_ Diploid level
@@ -247,10 +230,8 @@ biphasicPedNH<-Ped_in_Order
 biphasicCCmat <- calcCCmatrixBiphasic(biphasicPedNH)  #### !!!!!!! Update into calcCCmatrixHaploid() ?????
 rownames(biphasicCCmat) <- colnames(biphasicCCmat) <- rownames(biphasicPedNH)
 aMat <- 2 * biphasicCCmat
-  dim(aMat) 
 
 save(fndrsA,biphasicPedNH,aMat,file="fndrsA_biphasicPedNH_fnderOrdered.Rdata")
-
 
 
 ####### Calculating the outCovComb
@@ -265,15 +246,11 @@ load("/Users/maohuang/Desktop/Kelp/2020_2019_Phenotypic_Data/SugarKelpBreeding_N
 GPsA<-GPsA[!rownames(GPsA)=="SL18-LD-13-Mg-3",!colnames(GPsA)=="SL18-LD-13-Mg-3"]
 GPsA<-round(GPsA,digits=5)   ### 2.GPs A
   diag(GPsA) <- diag(GPsA) + 1e-5
-  is.positive.definite(GPsA)  # GPsA2 calculated by hand (above)
-  dim(GPsA)    # 278
+  is.positive.definite(GPsA)  # GPsA2 calculated by hand (above)  # 278
 
 diag(aMat) <- diag(aMat) + 1e-5
 is.positive.definite(aMat)     ### 3. pedigree
 
-  dim(fndrsA) # 47 x 47
-  dim(GPsA)  # 278 x 278
-  dim(aMat)  # 866 x 866
   identical(rownames(aMat),rownames(Ped_in_Order))
   sum(rownames(fndrsA)%in%rownames(aMat))   # 58
   
@@ -282,10 +259,10 @@ is.positive.definite(aMat)     ### 3. pedigree
   sum(rownames(aMat)==colnames(aMat))
   sum(rownames(fndrsA)%in%rownames(aMat))
   sum(rownames(GPsA)%in%rownames(aMat))  # 270  !///!! This became a problem
-  write.csv(rownames(GPsA)[!rownames(GPsA)%in%rownames(aMat)],"GPsA_not_in_aMat.csv")
+write.csv(rownames(GPsA)[!rownames(GPsA)%in%rownames(aMat)],"GPsA_not_in_aMat.csv")
 
 GPsA<-GPsA[rownames(GPsA)%in%rownames(aMat),colnames(GPsA)%in%rownames(aMat)]  # 270 x 270
-  dim(GPsA) 
+
 save(fndrsA,GPsA,aMat,file="CovList_3_As_0116_2021.Rdata")
 
 ##{} Run this in terminal
@@ -319,6 +296,7 @@ write.csv(rownames(outCovComb4),"outCovComb4_from_ordered_pedi_rownames.csv")
 
 
 
+#### FOR JL: Ignore these below part for now
 #### Compare two outCovComb4_old not ordered, and the outCovComb4_new ordred. Both at diploid level, r=0.99
 # In terminal
 load("outCovComb_files_0112_2021.Rdata")

@@ -58,7 +58,6 @@ rownames(geno2) <- paste0(substring(rownames(geno2), first=1, last=2), "18", sub
 geno2[geno2==0]=-1
 geno2[geno2==1]=0
 geno2[geno2==2]=1
-  ls()
 
 biphasicPedNH<-read.csv(paste0(InputFile,"/Ped_in_Order_866_Individuals_Fndr_New_Order_0116_2021.csv"),sep=",",header=TRUE,row.names=1)
   # To get the pedigree at diploid level": "biphasicPedNH"
@@ -154,7 +153,6 @@ rownames(biphasichapccMat)<-colnames(biphasichapccMat)<-pedinames
   names<-str_replace_all(names,"MG-","MG")
   
   colnames(GPs)<-names
-  head(names)
   
   ## RM checks, the mistake one (RM SL-PI-1-FG-1,SL-CT1-FG-3)
   IndiRM<-c("SL18-PI-1-FG1","3","SL18-CT1-FG3","SL18-CT1-MG2","SL18-CT1-MG3","SL18-OI-15-Female","SL18-ME-1-FG1","SL18-ME-1-MG1","SL18-ME-1-MG2")
@@ -179,8 +177,6 @@ rownames(biphasichapccMat)<-colnames(biphasichapccMat)<-pedinames
   
 GPsMrkImp<-imputeToMean(tSNP)  
   dim(GPsMrkImp)  #269 x 909749
-  GPsMrkImp[1:4,1:5]
-  tSNP[1:4,1:5]
   
 #Change GPs marker to 0, 1 format
   
@@ -232,7 +228,6 @@ diag(biphasichapccMat) <- diag(biphasichapccMat) + 1e-5   #1215
   which(!rownames(GPsA)%in%rownames(biphasichapccMat))  
 GPsA<-GPsA[rownames(GPsA)%in%rownames(aMat),colnames(GPsA)%in%rownames(aMat)]  # 269 x 269
   which(!rownames(fndrsA)%in%rownames(biphasichapccMat))
-  dim(GPsA)
 is.positive.definite(fndrA)  
 
 save(fndrA,GPsA,biphasichapccMat,file="Newly_saved_3_As_for_CovComb_0116_2021.Rdata")
@@ -263,6 +258,9 @@ save(outCovComb4_HapOrder,outCovComb4_Hapconden,file="outCovComb4_and_Conden_011
 
 ###{{}}
 
+
+##### FOR JL: Ignore these part for now
+#####
 ### compare dip and hap outCovComb
 rm(list=ls())
 load("/Users/maohuang/Desktop/Kelp/SugarKelpBreeding/TraitAnalyses201003/ReorderPedigree/outCovComb_files_0112_2021.Rdata")
