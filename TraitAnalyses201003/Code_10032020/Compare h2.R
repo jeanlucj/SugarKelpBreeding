@@ -1,4 +1,44 @@
 ### All the h2 to be compared
+#0113_2021 Diploid level estimated relationship matrix
+AshFDwPM           AshOnly        wetWgtPlot        dryWgtPerM
+0.461             0.070             0.504             0.443
+percDryWgt   densityBladesPerM
+0.052            0.211
+
+
+#diploid level:
+#Vu
+AshFDwPM           AshOnly        wetWgtPlot        dryWgtPerM
+0.03482060        1.06855333        0.18516428        0.02011178
+percDryWgt densityBladesPerM
+0.37694611     4371.56048352
+#ErrVar
+AshFDwPM           AshOnly        wetWgtPlot        dryWgtPerM
+0.04063593       14.08791618        0.18246975        0.02529187
+percDryWgt densityBladesPerM
+6.81710397    16303.83523684
+
+#Haploid level:
+#Vu
+AshFDwPM           AshOnly        wetWgtPlot        dryWgtPerM
+0.06737595        4.47609298        0.37705794        0.04108488
+percDryWgt densityBladesPerM
+0.93481316     8681.47155799
+#ErrVar
+AshFDwPM           AshOnly        wetWgtPlot        dryWgtPerM
+0.04173976       12.99868247        0.17831865        0.02495748
+percDryWgt densityBladesPerM
+6.73565154    16262.75622252
+
+
+
+#0114_2021 Haploid level estimated relationship matrix
+AshFDwPM           AshOnly        wetWgtPlot        dryWgtPerM
+0.617             0.256             0.679             0.622
+percDryWgt  densityBladesPerM
+0.122             0.348
+
+
 
 
 #AshFDwPM        wetWgtPlot        dryWgtPerM        percDryWgt densityBladesPerM 

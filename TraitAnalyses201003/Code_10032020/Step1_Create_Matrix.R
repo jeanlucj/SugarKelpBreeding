@@ -464,7 +464,7 @@ write.csv(biphasicPedNH,"biphasiPedNH_addmoreGP_866.csv")
   
 # 2.Calculate the CC matrix: relationship matrix
 source("calcCCmatrixBiphasic.R")
-biphasicPedNH<-read.csv("Ped_in_Order_866_Individuals.csv",sep=",",header=TRUE,row.names=1)
+biphasicPedNH<-read.csv("Ped_in_Order_866_Individuals_Fndr_New_Order_0116_2021.csv.csv",sep=",",header=TRUE,row.names=1)
 
 biphasicCCmat <- calcCCmatrixBiphasic(biphasicPedNH)  #### !!!!!!! Update into calcCCmatrixHaploid() ?????
 rownames(biphasicCCmat) <- colnames(biphasicCCmat) <- rownames(biphasicPedNH)
@@ -531,76 +531,5 @@ dataNHimboth_C<-dataNHimboth_C[order(dataNHimboth_C$plotNo),]
 
 save(dataNHim19_C,dataNHim20_C,dataNHimboth_C,file="dataNHim_withChk_3_sets_PhotoScore0123.rdata")
 #### !!!! This individual dataset still HAS the photoscore < 2,3 plots
-
-
-####### Calculating the outCovComb
-source("/Users/maohuang/Desktop/Kelp/2020_2019_Phenotypic_Data/Phenotypic_Analysis/TraitAnalyses200820_Updated_AfterCrossList/withSGP/is.square.matrix.R")
-source("/Users/maohuang/Desktop/Kelp/2020_2019_Phenotypic_Data/Phenotypic_Analysis/TraitAnalyses200820_Updated_AfterCrossList/withSGP/is.positive.definite.R")
-source("/Users/maohuang/Desktop/Kelp/2020_2019_Phenotypic_Data/Phenotypic_Analysis/TraitAnalyses200820_Updated_AfterCrossList/withSGP/is.symmetric.matrix.R")
-
-load("/Users/maohuang/Desktop/Kelp/2020_2019_Phenotypic_Data/SugarKelpBreeding_NoGitPush/GenotypicData_for_SugarKelpBreeding/GPsAmat_NA0.8_P1P2P3_09282020.Rdata")
-# Further reduced the "SL18-LD-13-Mg-3"
-GPsA<-GPsA[!rownames(GPsA)=="SL18-LD-13-Mg-3",!colnames(GPsA)=="SL18-LD-13-Mg-3"]
-
-GPsA<-round(GPsA,digits=5)   ### 2.GPs A
-diag(GPsA) <- diag(GPsA) + 1e-5
-is.positive.definite(GPsA)  # GPsA2 calculated by hand (above)
-  dim(GPsA)    #
-
-load("fndr_mrkRelMat.Rdata")  
-fndrsA<-round(mrkRelMat)     ### Added "shrink=TRUE" when estimating the mrkRelMat2
-diag(fndrsA) <- diag(fndrsA) + 1e-5
-is.positive.definite(fndrsA)   ### 1. fnders A
-  dim(fndrsA)
-
-load("Re_order_aMat.Rdata")
-diag(aMat) <- diag(aMat) + 1e-5
-is.positive.definite(aMat)     ### 3. pedigree
-
-  dim(fndrsA) # 47 x 47
-  dim(GPsA)  # 278 x 278
-  dim(aMat)  # 866 x 866
-  
-save(fndrsA,GPsA,aMat,file="CovList_3_As_0112_2021.Rdata")
-
-# Run this in terminal
-#This was where old files were calculated
-#setwd("/local/workdir/mh865/SNPCalling/Saccharina_latissima/bamAll/bam/mpileup/Filtering/CovComb")
-
-setwd("/local/workdir/mh865/outCovComb/")
-load("CovList_3_As_0112_2021.Rdata")
-
-library(CovCombR)
-
-
-sum(rownames(fndrsA)==colnames(fndrsA))
-sum(rownames(GPsA)==colnames(GPsA))  # 278
-sum(rownames(aMat)==colnames(aMat))
-sum(rownames(fndrsA)%in%rownames(aMat))
-sum(rownames(GPsA)%in%rownames(aMat))  # 270  !///!! This became a problem
-
-GPsA_2<-GPsA[rownames(GPsA)%in%rownames(aMat),colnames(GPsA)%in%colnames(aMat)]
-dim(GPsA_2)
-GPsA_2[1:4,1:5]
-write.csv(rownames(GPsA)[!rownames(GPsA)%in%rownames(aMat)],"GPsA_not_in_aMat.csv")
-
-### 1. NO initial, 3-list
-CovList<-NULL
-CovList[[1]]<-fndrsA ## fndrsA
-CovList[[2]]<-GPsA_2  ## Further RMed the "SL18-LD-13-Mg-3"
-CovList[[3]]<-aMat   
-
-### 4. amat initial, 3-list, add weight
-weights<-c(2,2,1)
-outCovComb4<-CovComb(CovList,nu=1500,w=weights,Kinit=aMat) 
-
-save(outCovComb1,outCovComb3,outCovComb4,file="outCovComb_files_0112_2021.Rdata")
-
-
-######### Calculating this on a haploid base
-
-
-
-
 
 
