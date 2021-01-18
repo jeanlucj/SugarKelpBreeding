@@ -47,11 +47,11 @@ dataAll$popChk <- ifelse(substr(dataAll$plotNo, 1, 1) == "Z", substr(dataAll$plo
 
   ls()
   head(dataAll)
-  dataAll[1:10,] #616
-
+  dataAll[1:10,] 
+  dim(dataAll)  #616
 ########################### A. Plot level data input, estimate pedNH
 dataNHpi<-dataAll[dataAll$Region=="GOM",] ## !!! RM SNE, 530 rows
-
+  dim(dataNHpi)
 dataNHpi <- dataNHpi[order(dataNHpi$plotNo),]  #### Plots in alphabetic order
   dim(dataNHpi)
   str(dataNHpi)    
@@ -59,7 +59,7 @@ dataNHpi<-dataNHpi[!dataNHpi$crossID=="Buffer",]  ## !!! RMed Buffer lines
 
 #dataNHpi<-dataNHpi[!dataNHpi$PhotoScore==0,] ## !!! RM PhotoScore=0,  447 rows
 dataNHpi<-dataNHpi[dataNHpi$PhotoScore>1,] ## !!! RM PhotoScore<=1
-  dim(dataNHpi)
+  dim(dataNHpi)   # 283
   colnames(dataNHpi)
 dataNHpi19<-dataNHpi[dataNHpi$Year==2019,] ## 2019 data   !!!!!!
 dataNHpi19_C<-dataNHpi19
@@ -74,12 +74,13 @@ dataNHpiBoth_C<-dataNHpiBoth_C[order(dataNHpiBoth_C$plotNo),] ## Order plotNo al
 
 save(dataNHpi19_C,dataNHpi20_C,dataNHpiBoth_C,file="dataNHpi_withChk_3_sets_PhotoScore23.rdata")
 
+
 ############################## Run it Only Once !!!! Fndrs Amat
 ##############3 RM "checks"
-dataNHpi_rmChk<-dataNHpi[!dataNHpi$crossID=="Check",]
+dataNHpi_rmChk<-dataNHpi[!dataNHpi$crossID=="Check",]    # 250
 FMGPs<-unique(c(as.character(dataNHpi_rmChk$femaPar),as.character(dataNHpi_rmChk$malePar)))
 SPs<-strsplit(as.character(FMGPs), split="-", fixed=T)
-CrossedSP<-unique(sapply(SPs, function(vec) paste(vec[1:3], collapse="-"))) #93 of the unique fndrs used in making crosses
+CrossedSP<-unique(sapply(SPs, function(vec) paste(vec[1:3], collapse="-"))) #70 of the unique fndrs used in making crosses for GOM, adding SNE it is 90 of them
   str(FMGPs)  # 227 unique GPs being used in crosses
   head(CrossedSP)
   str(CrossedSP)
@@ -98,16 +99,16 @@ geno2[geno2==0]=-1
 geno2[geno2==1]=0
 geno2[geno2==2]=1
   
-geno2<-geno2[rownames(geno2)%in%CrossedSP,]  # 93 fnders made crosses, only 56 were genotyped
+geno2<-geno2[rownames(geno2)%in%CrossedSP,]  # 70 fnders made crosses, only 47 were genotyped
   #write.csv(rownames(geno2),"Fndrs_genotyped_Samples.csv")
 fndrMrkData<-geno2
   
 mrkRelMat <- A.mat(fndrMrkData, impute.method="EM", return.imputed=T,shrink=TRUE) ## Add shrink per Deniz
 fndrMrkDataImp <- mrkRelMat$imputed
 mrkRelMat <- mrkRelMat$A  ####### !!! 1. Fnder Amat
-  dim(mrkRelMat)  #56 x 56
+  dim(mrkRelMat)  #47 x 47  !!!!!!!
   #write.csv(rownames(mrkRelMat),"Fndrs_used_in_Amat.csv")
-  
+  save(mrkRelMat,file="fndr_mrkRelMat.Rdata") 
 ###########################  
   
   # ##################!!!!!! This is for haploid
@@ -152,6 +153,11 @@ dataNHpiBoth<-dataNHpi[!dataNHpi$crossID=="Check",]
   dim(dataNHpi19) #122
   dim(dataNHpi20)  #128
   dim(dataNHpiBoth)  #250
+  
+  
+  
+  
+###### Below is to make the biphasicPedNH file, which is now reordered and remade in Redo_Pedigree.R   
 ######################################################################  
 ### Make pedigree relationship matrix  !!!!!!!!!! RUN 3 TIMES for 3 data sets !!!!!! 
 
@@ -458,6 +464,8 @@ write.csv(biphasicPedNH,"biphasiPedNH_addmoreGP_866.csv")
   
 # 2.Calculate the CC matrix: relationship matrix
 source("calcCCmatrixBiphasic.R")
+biphasicPedNH<-read.csv("Ped_in_Order_866_Individuals_Fndr_New_Order_0116_2021.csv.csv",sep=",",header=TRUE,row.names=1)
+
 biphasicCCmat <- calcCCmatrixBiphasic(biphasicPedNH)  #### !!!!!!! Update into calcCCmatrixHaploid() ?????
 rownames(biphasicCCmat) <- colnames(biphasicCCmat) <- rownames(biphasicPedNH)
 
@@ -476,6 +484,8 @@ rownames(biphasicCCmat) <- colnames(biphasicCCmat) <- rownames(biphasicPedNH)
 aMat <- 2 * biphasicCCmat
   dim(aMat)  ###### !!! 3. Pedigree based CC matrix
 
+save(aMat,file="Re_order_aMat.Rdata")
+  
 # fndRows <- which(apply(biphasicPedNH[,2:3], 1, function(vec) all(vec == 0)))  ### Founders, which() only keeps the TRUE ones
 # gpRows <- which(apply(biphasicPedNH[,2:3], 1, function(vec) is.na(vec[2])))   ### GPs, the col 3 is NA
 # spRows <- which(apply(biphasicPedNH[,2:3], 1, function(vec) all(vec > 0)))    ### Progeny sps, col 2 and 3 are all values
@@ -486,7 +496,7 @@ aMat <- 2 * biphasicCCmat
 #   length(fndRows)+length(gpRows)+length(spRows) #294; 361; 550
 
 hMat <- calcHmatrix(mrkRelMat, aMat, aMatFounders=rownames(mrkRelMat))
-save(mrkRelMat,aMat,hMat,biphasicPedNH,biphasicCCmat,fndrMrkData, file=paste0("hMat_PedNH_CCmat_fndrMrkData_",yr,"_PhotoScore23_WithSGP_866.rdata"))  ###### !!!!!!!
+save(mrkRelMat,aMat,hMat,biphasicPedNH,biphasicCCmat,fndrMrkData, file=paste0("hMat_PedNH_CCmat_fndrMrkData_",yr,"_PhotoScore23_WithSGP_866_Reorder_Pedigree.rdata"))  ###### !!!!!!!
 
 
 
@@ -521,7 +531,5 @@ dataNHimboth_C<-dataNHimboth_C[order(dataNHimboth_C$plotNo),]
 
 save(dataNHim19_C,dataNHim20_C,dataNHimboth_C,file="dataNHim_withChk_3_sets_PhotoScore0123.rdata")
 #### !!!! This individual dataset still HAS the photoscore < 2,3 plots
-
-
 
 
