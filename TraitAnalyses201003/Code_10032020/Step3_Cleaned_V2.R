@@ -15,6 +15,8 @@ library(rrBLUP)
 load(paste0(datafdr,"dataNHpi_withChk_3Yrs_PhotoScore123_07152021.rdata"))  
 load(paste0(datafdr,"dataNHim_withChk_3Yrs_PhotoScore0123_07152021.rdata"))
   
+
+
 ### !!!!!!!!!! Here needs to run 3 times, each for each scenario
 ### !!!!Both
 dataNHpi<-dataNHpi3yrs_C  
@@ -50,7 +52,7 @@ bothYr<-FALSE
 
 
 ### !!!! 2021
-dataNHpi<-droplevels(Yr21[!Yr21$PhotoScore==1,])
+dataNHpi<-droplevels(Yr21[!Yr21$PhotoScore==1,]) ## !!!!!!! RM PhotoScore 1
 dataNHim<-Yr21_Ind
 yr<-"2021"
 bothYr<-FALSE
@@ -70,9 +72,6 @@ for (col in c( "Year", "plotNo","Region","femaPar", "femaParLoc", "malePar", "ma
   nlevels(dataNHpi$plotNo)
   nlevels(dataNHpi$Year)
   unique(dataNHpi$Year)
-# # Make data cols numeric. Re-Enforce data is numeric
-# for (col in c("wetWgtPlot", "lengthPlot", "wetWgtPerM","percDryWgt",  "dryWgtPerM","densityBlades")) #,"AshFreedryWgtPerM","AshFDwPM"
-#   dataNHpi[,col] <- as.numeric(dataNHpi[,col])
 
 # If percentDryWeigth is NA, then the plot WetWeightPerM and DryWeightperM should be set at NA, WetWeigthPerM may be just rope
 dataNHpi[is.na(dataNHpi$percDryWgt), c("dryWgtPerM")] <- NA
@@ -120,9 +119,6 @@ phenoNamesFact<-factor(dataNHpi_RMchk$Crosses,levels=rownames(outCovComb))   #co
 msZ0<-model.matrix(~-1 +phenoNamesFact,data=dataNHpi_RMchk)  
   colnames(msZ0)<-stringr::str_split_fixed(colnames(msZ0),"phenoNamesFact",2)[,2]
 
-#### Does this matter??
-identical(colnames(outCovComb)[544:787],levels(dataNHpi_RMchk$Crosses)) ####this= FALSE !!!Ordering of crosses in levels dataNHPi differs from outCovComb1
-
 ## 3. chks rows
 chkSpMat<-matrix(0, nrowchk, nrow(outCovComb))
   dim(chkSpMat)   # 33 x 866  # 2019, 17 x 866  # 2020, 16 x 866
@@ -153,11 +149,9 @@ ErrVar<-function(msOut){
  msOut$Ve
 }
 
-  # sum(rownames(msX1)==rownames(dataNHpi))==nrow(dataNHpi) #283/ 139
-  # sum(rownames(msZ)[1:250]==rownames(msX)[1:250]) #250, the other 33 are checks
-  # 
-  # msZcolname<-str_replace(colnames(msZ),"phenoNamesFact","")
-  # sum(msZcolname==rownames(hMat))  # !!! Must be 866
+ 
+  # msZcolname<-stringr::str_replace(colnames(msZ),"phenoNamesFact","")
+  # sum(msZcolname==rownames(outCovComb))  # !!! Must be 866
 
 write.csv(dataNHpi,paste0(datafdr,"dataNHpi_Last_Used_in_Model_",yr,"_0715_2021.csv"))
 
@@ -172,7 +166,7 @@ if (UseChk==FALSE){
     #Both Years !!!!!
     msX1 <- model.matrix( ~ line%in%Year+block%in%Year+Year, data=dataNHpi)  ### !!!! No popChk because no checks for ashes
     msX1 <- msX1[, apply(msX1, 2, function(v) !all(v == 0))]
-  }else{
+  }else if (BothYear==FALSE){
     #Within Year !!!! 2019 2020
     msX1 <- model.matrix( ~ line+block, data=dataNHpi)
     msX1 <- msX1[, apply(msX1, 2, function(v) !all(v == 0))]
@@ -194,10 +188,10 @@ if (UseChk==FALSE){
     
   }else if (BothYear==FALSE){
     # Within Year !!!! 2019 2020
-    if (yr%in%c(2019,202)){
+    if (yr%in%c("2019","2020")){
       msX <- model.matrix( ~ line+block+popChk, data=dataNHpi)  
       msX <- msX[, apply(msX, 2, function(v) !all(v == 0))] 
-         }else if(yr%in%c(2021)){
+         }else if(yr%in%c("2021")){
       msX <- model.matrix( ~ line+block, data=dataNHpi)  
       msX <- msX[, apply(msX, 2, function(v) !all(v == 0))] 
         }
@@ -222,7 +216,6 @@ if (UseChk==FALSE){
 
 #msOutAshFDwPM<-RunHeritability(BothYear=bothYr,UseChk=FALSE,Trait=dataNHpi$AshFDwPM,dataNHpi=dataNHpi,hMat=outCovComb)$msOutTrait
 #msOutAshOnly<-RunHeritability(BothYear=bothYr,UseChk=FALSE,Trait=dataNHpi$Ash,dataNHpi=dataNHpi,hMat=outCovComb)$msOutTrait
-
 #previous DWpM was log(DWpM+1)
 
 # if (yr==2021){
@@ -231,7 +224,6 @@ if (UseChk==FALSE){
 #   msOutDWPMh <-RunHeritability(BothYear=bothYr,UseChk=TRUE,Trait=log(dataNHpi$dryWgtPerM+1),dataNHpi=dataNHpi,hMat=outCovComb)$msOutTrait
 #   
 # }
-msOutDWPMh <-RunHeritability(BothYear=bothYr,UseChk=TRUE,Trait=dataNHpi$dryWgtPerM,dataNHpi=dataNHpi,hMat=outCovComb)$msOutTrait
 
 ### For Scott, Ash, CN
 # #msOutCN<-RunHeritability(BothYear=bothYr,UseChk=FALSE,Trait=dataNHpi$C_N_Combine,dataNHpi=dataNHpi,hMat=outCovComb)$msOutTrait
@@ -248,18 +240,26 @@ msOutDWPMh <-RunHeritability(BothYear=bothYr,UseChk=TRUE,Trait=dataNHpi$dryWgtPe
 # barplot(Scott, ylab="Heritability", las=2, cex.axis=1.0, cex.lab=1.3, cex.names=1.0)
 
 #msOutAshFreeDW<-RunHeritability(BothYear=bothYr,UseChk=FALSE,Trait=dataNHpi$AshFreedryWgtPerM,dataNHpi=dataNHpi,hMat=outCovComb)$msOutTrait
+msOutDWPMh <-RunHeritability(BothYear=bothYr,UseChk=TRUE,Trait=dataNHpi$dryWgtPerM,dataNHpi=dataNHpi,hMat=outCovComb)$msOutTrait
 msOutWWPh <- RunHeritability(BothYear=bothYr,UseChk=TRUE,Trait=dataNHpi$wetWgtPerM,dataNHpi=dataNHpi,hMat=outCovComb)$msOutTrait
 msOutPDWh <- RunHeritability(BothYear=bothYr,UseChk=TRUE,Trait=dataNHpi$percDryWgt,dataNHpi=dataNHpi,hMat=outCovComb)$msOutTrait
-
-
 msOutDBh <- RunHeritability(BothYear=bothYr,UseChk=TRUE,Trait=dataNHpi$densityBlades,dataNHpi=dataNHpi,hMat=outCovComb)$msOutTrait
+
+#### For yr 2021 ONLY
+# ### !!!!!!!!! yr2021, UseChk=FALSE
+# msOutDWPMh <-RunHeritability(BothYear=bothYr,UseChk=FALSE,Trait=dataNHpi$dryWgtPerM,dataNHpi=dataNHpi,hMat=outCovComb)$msOutTrait
+# msOutWWPh <- RunHeritability(BothYear=bothYr,UseChk=FALSE,Trait=dataNHpi$wetWgtPerM,dataNHpi=dataNHpi,hMat=outCovComb)$msOutTrait
+# msOutPDWh <- RunHeritability(BothYear=bothYr,UseChk=FALSE,Trait=dataNHpi$percDryWgt,dataNHpi=dataNHpi,hMat=outCovComb)$msOutTrait
+# msOutDBh <- RunHeritability(BothYear=bothYr,UseChk=FALSE,Trait=dataNHpi$densityBlades,dataNHpi=dataNHpi,hMat=outCovComb)$msOutTrait
+# ### !!!!!!!!!
+
 
 ###Not wetWgtPlot, but compare wetWgtPerM
 
-  heritability(msOutAshFreeDW) #both 0.561 #2019 #2020 0.7995067   # Dave cal
-  heritability(msOutAshFDwPM) #both 0.461 #2019 #2020 0.5173875    # my cal
-  heritability(msOutAshOnly)  #both 0.070 
-  
+  # heritability(msOutAshFreeDW) #both 0.561 #2019 #2020 0.7995067   # Dave cal
+  # heritability(msOutAshFDwPM) #both 0.461 #2019 #2020 0.5173875    # my cal
+  # heritability(msOutAshOnly)  #both 0.070 
+  # 
  ### NOT wetWgtPlot !!!!!!1  
 traitsnames<-c( "dryWgtPerM","wetWgtPerM", "percDryWgt","plotDensity")  #"AshFDwPM","AshOnly","C:N ratio",
 h2hMat <- c(
@@ -287,7 +287,6 @@ names(h2hMat) <-names(Vus)<-names(ErrVars)<-traitsnames
   
 H2Table<-rbind(h2hMat,Vus,ErrVars)
 write.csv(H2Table,paste0(datafdr,"H2_Plot_Level_",yr,"years","_usingMatrix_",diphap,"_0715_2021.csv"))
-  
 
 allBLUPsPlot <- cbind(msOutDWPMh$u,msOutWWPh$u,  msOutPDWh$u,msOutDBh$u) #msOutAshFDwPM$u,msOutAshOnly$u
   dim(allBLUPsPlot)
@@ -308,10 +307,10 @@ if (BothYear==TRUE){
   
 }else if (BothYear==FALSE){
   # Within Year !!!! 2019 2020
-    if (yr%in%c(2019,2020)){
+    if (yr%in%c("2019","2020")){
     msX <- model.matrix( ~ line+block+popChk, data=dataNHpi)  
     msX <- msX[, apply(msX, 2, function(v) !all(v == 0))]
-    }else if (yr%in%c(2021)){
+    }else if (yr%in%c("2021")){
     msX <- model.matrix( ~ line+block, data=dataNHpi)  
     msX <- msX[, apply(msX, 2, function(v) !all(v == 0))]
     }
@@ -364,11 +363,12 @@ msXim<-msXim%*%msX
 
 msXim<-msXim[, apply(msXim, 2, function(v) !all(v == 0))]
 
-msOutBLh <- mixed.solve(y=log(dataNHim$bladeLength+1), Z=msZim, K=hMat, X=msXim, SE=T)
-msOutBMWh <- mixed.solve(y=log(dataNHim$bladeMaxWidth+1), Z=msZim, K=hMat, X=msXim, SE=T)
-msOutBTh <- mixed.solve(y=log(dataNHim$bladeThickness+1), Z=msZim, K=hMat, X=msXim, SE=T)
-msOutSLh <- mixed.solve(y=log(dataNHim$stipeLength+1), Z=msZim, K=hMat, X=msXim, SE=T)
-msOutSDh <- mixed.solve(y=log(dataNHim$stipeDiameter+1), Z=msZim, K=hMat, X=msXim, SE=T)
+##0717_2021, RM all log(dataNHim$bladeLength+1)
+msOutBLh <- mixed.solve(y=dataNHim$bladeLength, Z=msZim, K=hMat, X=msXim, SE=T)
+msOutBMWh <- mixed.solve(y=dataNHim$bladeMaxWidth, Z=msZim, K=hMat, X=msXim, SE=T)
+msOutBTh <- mixed.solve(y=dataNHim$bladeThickness, Z=msZim, K=hMat, X=msXim, SE=T)
+msOutSLh <- mixed.solve(y=dataNHim$stipeLength, Z=msZim, K=hMat, X=msXim, SE=T)
+msOutSDh <- mixed.solve(y=dataNHim$stipeDiameter, Z=msZim, K=hMat, X=msXim, SE=T)
 h2hMatim <- c(heritability(msOutBLh), heritability(msOutBMWh), heritability(msOutBTh), heritability(msOutSLh), heritability(msOutSDh)) #
 names(h2hMatim) <- c("bladeLength", "bladeMaxWidth",  "bladeThickness", "stipeLength", "stipeDiameter") 
 
@@ -386,6 +386,73 @@ colnames(allBLUPs_addIndiv) <- c("DWpM","WWpM",  "PDW", "BDns", "BLen", "BMax", 
 write.csv(allBLUPs_addIndiv,paste0(datafdr,"allBLUPs_Plots+Individuals_withSGP_950_AddfndrsMrkData_",diphap,"_",yr,"_0715_2021.csv"))
 
 
+
+### Load In all h2 and make a plot
+diphap<-"MixedPloidy"
+datafdr<-"/Users/maohuang/Desktop/Kelp/Simulation_Study/SugarKelpBreeding/TraitAnalyses201003/data/"
+  
+h2_scheme<-NULL  
+for (yr in c("2019","2020","2021","Two","Three")){
+ allh2<-read.csv(paste0(datafdr,"H2_Individual_Level_",yr,"years_usingMatrix_",diphap,"_0715_2021.csv"))
+ allh2$scheme<-yr
+ allh2$Traitorder<-as.factor(1:nrow(allh2))
+ allh2$TraitRename<-c("DWpM","WWpM","pDW","Dens","BLen","BmWid","BTh","Slen","SDia")
+ colnames(allh2)[colnames(allh2)=="x"]<-"h2"
+ colnames(allh2)[colnames(allh2)=="X"]<-"Trait"
+ h2_scheme<-rbind(h2_scheme,allh2)
+}
+
+# Traitname<-as.character(levels(allh2$Trait))
+# Rename<-c("BLen","BmWid","BTh","DWpM","pDW","Dens","SDia","Slen","WWpM")
+# h2_scheme$RenameTrait<-plyr::mapvalues(h2_scheme$Trait,from=as.character(levels(h2_scheme$Trait)),to=Rename)
+
+TraitRename<-c("DWpM","WWpM","pDW","Dens","BLen","BmWid","BTh","Slen","SDia")
+h2_scheme$schemeOrder<-plyr::mapvalues(h2_scheme$scheme,from=unique(as.character(h2_scheme$scheme)),to=c(1,2,3,4,5))
+  head(h2_scheme)
+## Long to wide, save for excel plotting
+  h2_wide<-tidyr::spread(h2_scheme[,colnames(h2_scheme)%in%c("Trait","h2","scheme")],Trait,h2)
+  h2_wide
+  write.csv(h2_wide,"h2_3yrs_estimated_with_5_Datasets.csv")
+  
+ggplot2::ggplot(data=h2_scheme,mapping=aes(x=Traitorder,y=h2,fill=schemeOrder,width=0.7))+
+  geom_bar(stat="identity",position=position_dodge())+
+  theme_bw()+
+  scale_fill_brewer(palette="Paired",name="Dataset",labels=c("2019","2020","2021","2019+2020","Three years"))+
+  scale_x_discrete(breaks=c(1:9),
+                   labels=c(TraitRename))+
+  labs(x="Traits",y="Narrow Sense Heritability")+
+  theme(panel.grid.major=element_blank(),
+        panel.grid.minor = element_blank())
+
+  
+#### Read in all the BLUPs
+
+diphap<-"MixedPloidy"
+datafdr<-"/Users/maohuang/Desktop/Kelp/Simulation_Study/SugarKelpBreeding/TraitAnalyses201003/data/"
+
+TraitWant<-"DWpM"  #### This is the trai of interests
+
+allBLUPs_scheme<-matrix(0,nrow=length(SPCross),ncol=1) # This required run inside loop once to getting the length of SPCross
+for (yr in c("2019","2020","2021","Two","Three")){
+  allBLUPs_3yrs<-read.csv(paste0(datafdr,"allBLUPs_Plots+Individuals_withSGP_950_AddfndrsMrkData_",diphap,"_",yr,"_0715_2021.csv"))
+  allBLUPs_3yrs$scheme<-yr
+  colnames(allBLUPs_3yrs)[colnames(allBLUPs_3yrs)=="X"]<-"ID"
+  rownames(allBLUPs_3yrs)<-allBLUPs_3yrs$ID
+  #Get only the SPs
+    head(allBLUPs_3yrs)
+    dim(allBLUPs_3yrs)
+  SPCross<-which(grepl("x",rownames(allBLUPs_3yrs)))
+  SPCross_BLUPs<-allBLUPs_3yrs[SPCross,c("scheme",TraitWant)]
+    head(SPCross_BLUPs)
+    dim(SPCross_BLUPs)
+  colnames(SPCross_BLUPs)[colnames(SPCross_BLUPs)==TraitWant]<-paste0(TraitWant,"_",yr)
+  allBLUPs_scheme<-cbind(allBLUPs_scheme,SPCross_BLUPs)
+}
+  head(allBLUPs_scheme)
+allBLUPs_scheme<-allBLUPs_scheme[order(-allBLUPs_scheme$DWpM_Three),]
+
+write.csv(allBLUPs_scheme,paste0("allBLUPs_3yrs_all_scenarios_sort_",TraitWant,".csv"))
+
 Y<-dataNHpi
 library(ggplot2)
 plot<-ggplot(data=Y,aes(dryWgtPerM,Year))+
@@ -393,39 +460,6 @@ plot<-ggplot(data=Y,aes(dryWgtPerM,Year))+
   geom_line(aes(group=as.factor(Crosses)))
 print(plot)
 
-
-# traitsherit1<-c("Ash","C_N_Combine","AshFDwPM")
-# traitsherit2<-c("dryWgtPerM","wetWgtPlot","percDryWgt","densityBlades")
-# 
-# Vus<-NULL
-# ErrVars<-NULL
-# Herit<-NULL
-# for (traits in traitsherit1){
-#   Trait<-dataNHpi[,traits]
-#   msOut<-RunHeritability(BothYear=TRUE,UseChk=FALSE,Trait=Trait,dataNHpi=dataNHpi,hMat=outCovComb)$msOutTrait
-#   Vus<-c(Vus,Vu(msOut))
-#   ErrVars<-c(ErrVars,ErrVar(msOut))
-#   Herit<-c(Herit,heritability(msOut))
-# }
-# 
-# H1all<-rbind(Herit,Vus,ErrVars)
-# colnames(H1all)<-traitsherit1
-#   H1all
-# 
-# Vus<-NULL
-# ErrVars<-NULL
-# Herit<-NULL
-# for (traits in traitsherit2){
-#   Trait<-dataNHpi[,traits]
-#   msOut<-RunHeritability(BothYear=TRUE,UseChk=TRUE,Trait=Trait,dataNHpi=dataNHpi,hMat=outCovComb)$msOutTrait
-#   Vus<-c(Vus,Vu(msOut))
-#   ErrVars<-c(ErrVars,ErrVar(msOut))
-#   Herit<-c(Herit,heritability(msOut))
-# }
-
-# H2all<-rbind(Herit,Vus,ErrVars)
-# colnames(H2all)<-traitsherit2
-#   H2all
 
 
 ########### FIGURE 3 Plotting BVs correlation, and BVs by generations
@@ -439,6 +473,13 @@ yr<-"Three"
 diphap<-"MixedPloidy"
 allBLUPs<-read.csv(paste0(datafdr,"allBLUPs_Plots+Individuals_withSGP_950_AddfndrsMrkData_",diphap,"_",yr,"_0715_2021.csv"),sep=",",header=TRUE,row.names=1)
   head(allBLUPs)
+  dim(allBLUPs)
+colnames(allBLUPs)<-c("DWpM","WWpM","pDW","BD","BL","BmWid","BTh","SL","SDia")  
+
+## The crosses that has "x" in the name
+SPCross<-which(grepl("x",rownames(allBLUPs)))
+SPCross_BLUPs<-allBLUPs[SPCross,]
+
 #rownames(allBLUPs) is the same as that in u, and hMat
 
 ### 1. Take out SProg_GPs
@@ -472,14 +513,16 @@ SP_allBLUPs<-SP_allBLUPs[order(-SP_allBLUPs$DWpM),]  ###### Trait !!!!!!
   head(SP_allBLUPs)
 nrow(GP_allBLUPs)+length(fndNames)+nrow(SP_allBLUPs)
 #517(=439 GPs_from_fndr+78 SProg_GPs) +104+ 245
+  
 
-pdf(paste0(datafdr,"CorrPlot_SPplots",yr,"_PhotoScore23_With_",diphap,"_0715_2021.pdf"))
-corrplot::corrplot.mixed(cor(SP_allBLUPs), diag="n", tl.cex=0.6, tl.col=1)
+pdf(paste0(datafdr,"CorrPlot_SPplots",yr,"_PhotoScore23_With_",diphap,"_0715_2021_V2.pdf"))
+corrplot::corrplot.mixed(cor(SPCross_BLUPs), diag="n", tl.cex=0.6, tl.col=1)
 dev.off()
 
 #corrplot::corrplot.mixed(cor(dataNHpi[,c("dryWgtPerM","wetWgtPerM","percDryWgt","densityBlades")]),na.rm=TRUE,diag="n", tl.cex=0.6, tl.col=1)
 
 traitname<-"DWpM" # !!!!!!!!!!
+allBLUPs<-allBLUPs0
 # Different colors for fndr, GP, progeny SP crosses
 colSPGP <- c(rep("Founder SPs", length(sampledSP)), rep("GPs from Founder", length(releaseGP)), rep("Farm SPs", length(progenySP)),rep("GPs from Farm SPs",nrow(SProg_GPs)))
 colSPGP[which(nDesc == 0)] <- "Founder SPs without progeny"
@@ -489,8 +532,9 @@ OrderedBLUPs<-as.data.frame(rbind(allBLUPs[sampledSP,],allBLUPs[releaseGP,]/2,al
   str(colSPGP)
 OrderedBLUPs$colSPGP<-colSPGP  
 OrderedBLUPs$Trait<-OrderedBLUPs[,traitname]  
+  (dim(OrderedBLUPs))
 
-
+write.csv(OrderedBLUPs,paste0("OrderedBLUPs_3yrs_",nrow(OrderedBLUPs),"Individuals.csv"))
 ##### Need to add and find out which SPs is from 2019 or 2020 ???????????/
   #OrderedBLUPs$Year<-expss::vlookup(OrderedBLUPS)
 #### FIGURE 3 !!!!!!! Plot out each generation of BLUPs
@@ -501,18 +545,15 @@ ggplot(data=OrderedBLUPs,mapping=aes(x=1:950,y=Trait,color=colSPGP))+
          geom_point()+
     scale_color_manual(name="Category",
                        values=c("Founder SPs"="black","Founder SPs without progeny"="grey","GPs from Founder"="dark green","Farm SPs"="dark red","GPs from Farm SPs"="red"))+
-  labs(x="Individual",y="Dry Weight per Meter (kg/m)")
+  labs(x="Individual",y="Dry Weight per Meter (kg/m)")+
+  theme_bw()+
+  theme(panel.grid.major=element_blank(),
+        panel.grid.minor = element_blank())
+  
 
 dev.off()  
-  
-# values=c("black","grey","dark green","dark red","red"),
-#labels=c("Founder SPs","Founder SPs not crossed","GPs from Founder","Farm SPs","GPs from Farm SPs")
-
-
-
-
-
-
+### This is how to RM legends  in the theme()
+#legend.position="none"
 write.csv(OrderedBLUPs,paste0("allBLUPsDF_Ordred_",yr,"_Plots_Indiv_With",diphap,"_0712_2021.csv"))
 
 # rnPos <- rownames(allBLUPs)[intersect(which(nDesc == 0), which(allBLUPs[,colnames(allBLUPs)%in%traitname]>0))] #!! The second col is DWpM
@@ -542,67 +583,67 @@ write.csv(allBLUPsDF,paste0("allBLUPs_DF_",yr,".csv"))
 
 
 #######################################################
-##{{}}
-#########!!!!!!!!!!!!! Run this to get the outCovComb4 Only Once !!!!!!!!
-source("is.square.matrix.R")
-source("is.positive.definite.R")
-source("is.symmetric.matrix.R")
-load("GPsAmat_NA0.8_P1P2P3_09282020.Rdata")
-
-#make positive definite: decimal points differ off-diagonal causes it being non-symmetric
-# Further reduced the "SL18-LD-13-Mg-3" #GPsA<-GPsA[!rownames(GPsA)=="SL18-LD-13-Mg-3",!colnames(GPsA)=="SL18-LD-13-Mg-3"]
-which(colnames(GPsA)=="SL18-PI-1-FG1")
-IndiRM<-c("SL18-PI-1-FG1","3","SL18-CT1-FG3","SL18-CT1-MG2","SL18-CT1-MG3","SL18-OI-15-Female","SL18-ME-1-FG1","SL18-ME-1-MG1","SL18-ME-1-MG2")
-
-GPsA<-GPsA[!rownames(GPsA)%in%IndiRM,!colnames(GPsA)%in%IndiRM] # 269 by 269
-  dim(GPsA)
-
-fndrsA<-round(mrkRelMat)     ### Added "shrink=TRUE" when estimating the mrkRelMat2
-diag(fndrsA) <- diag(fndrsA) + 1e-5
-is.positive.definite(fndrsA)   ### RelationshipMatrix_1. fnders A
-
-GPsA<-round(GPsA,digits=5)   ### RelationshipMatrix_2.GPs A
-diag(GPsA) <- diag(GPsA) + 1e-5
-is.positive.definite(GPsA)  
-
-#diag(mrkRelMat2) <- diag(mrkRelMat2) + 1e-5
-diag(aMat) <- diag(aMat) + 1e-5
-is.positive.definite(aMat)     ### RelationshipMatrix_3: pedigree based for ALL
-
-#save(fndrsA,GPsA,aMat,file="CovList_3_As.Rdata")
-#### Run these in terminal too !!!!!
-#load("CovList_3_As.Rdata")
-#install.packages("CovCombR")
-
-library(CovCombR)
-
-#### III. Make the combined RelationshipMatrix
-### 1. NO initial, 3-list
-CovList<-NULL
-CovList[[1]]<-fndrsA ## fndrsA
-CovList[[2]]<-GPsA  ## Further RMed the "SL18-LD-13-Mg-3"
-CovList[[3]]<-aMat   
-
-### outCovComb1<-CovComb(CovList,nu=1500)   
-
-### 2. aMat initial, 2-list ------- Not correct, Only 239 invididuals
-# CovList2<-NULL
-# CovList2[[1]]<-fndrsA ## fndrsA
-# CovList2[[2]]<-GPsA
-# outCovComb2<-CovComb(CovList2,nu=1500,Kinit=aMat) 
-####
-
-### 3. aMat initial, 3-list
-### outCovComb3<-CovComb(CovList,nu=1500,Kinit=aMat) 
-
-### 4. aMat initial, 3-list, add weight
-weights<-c(2,2,1)
-outCovComb4<-CovComb(CovList,nu=1500,w=weights,Kinit=aMat) 
-
-save(outCovComb4,file="outCovComb4_10012020_withSGP_866.Rdata")
-#########!!!!!!!!!!!!! Run the above Only Once !!!!!!!!
-##{{}}
-########################################################
+##{{}} These are already updated in re-do relationship matrix R script
+# #########!!!!!!!!!!!!! Run this to get the outCovComb4 Only Once !!!!!!!!
+# source("is.square.matrix.R")
+# source("is.positive.definite.R")
+# source("is.symmetric.matrix.R")
+# load("GPsAmat_NA0.8_P1P2P3_09282020.Rdata")
+# 
+# #make positive definite: decimal points differ off-diagonal causes it being non-symmetric
+# # Further reduced the "SL18-LD-13-Mg-3" #GPsA<-GPsA[!rownames(GPsA)=="SL18-LD-13-Mg-3",!colnames(GPsA)=="SL18-LD-13-Mg-3"]
+# which(colnames(GPsA)=="SL18-PI-1-FG1")
+# IndiRM<-c("SL18-PI-1-FG1","3","SL18-CT1-FG3","SL18-CT1-MG2","SL18-CT1-MG3","SL18-OI-15-Female","SL18-ME-1-FG1","SL18-ME-1-MG1","SL18-ME-1-MG2")
+# 
+# GPsA<-GPsA[!rownames(GPsA)%in%IndiRM,!colnames(GPsA)%in%IndiRM] # 269 by 269
+#   dim(GPsA)
+# 
+# fndrsA<-round(mrkRelMat)     ### Added "shrink=TRUE" when estimating the mrkRelMat2
+# diag(fndrsA) <- diag(fndrsA) + 1e-5
+# is.positive.definite(fndrsA)   ### RelationshipMatrix_1. fnders A
+# 
+# GPsA<-round(GPsA,digits=5)   ### RelationshipMatrix_2.GPs A
+# diag(GPsA) <- diag(GPsA) + 1e-5
+# is.positive.definite(GPsA)  
+# 
+# #diag(mrkRelMat2) <- diag(mrkRelMat2) + 1e-5
+# diag(aMat) <- diag(aMat) + 1e-5
+# is.positive.definite(aMat)     ### RelationshipMatrix_3: pedigree based for ALL
+# 
+# #save(fndrsA,GPsA,aMat,file="CovList_3_As.Rdata")
+# #### Run these in terminal too !!!!!
+# #load("CovList_3_As.Rdata")
+# #install.packages("CovCombR")
+# 
+# # library(CovCombR)
+# 
+# # #### III. Make the combined RelationshipMatrix
+# # ### 1. NO initial, 3-list
+# # CovList<-NULL
+# # CovList[[1]]<-fndrsA ## fndrsA
+# # CovList[[2]]<-GPsA  ## Further RMed the "SL18-LD-13-Mg-3"
+# # CovList[[3]]<-aMat   
+# # 
+# ### outCovComb1<-CovComb(CovList,nu=1500)   
+# 
+# ### 2. aMat initial, 2-list ------- Not correct, Only 239 invididuals
+# # CovList2<-NULL
+# # CovList2[[1]]<-fndrsA ## fndrsA
+# # CovList2[[2]]<-GPsA
+# # outCovComb2<-CovComb(CovList2,nu=1500,Kinit=aMat) 
+# ####
+# 
+# ### 3. aMat initial, 3-list
+# ### outCovComb3<-CovComb(CovList,nu=1500,Kinit=aMat) 
+# 
+# ### 4. aMat initial, 3-list, add weight
+# weights<-c(2,2,1)
+# outCovComb4<-CovComb(CovList,nu=1500,w=weights,Kinit=aMat) 
+# 
+# save(outCovComb4,file="outCovComb4_10012020_withSGP_866.Rdata")
+# #########!!!!!!!!!!!!! Run the above Only Once !!!!!!!!
+# ##{{}}
+# ########################################################
 
 
 

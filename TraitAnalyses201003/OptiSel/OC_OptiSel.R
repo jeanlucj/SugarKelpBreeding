@@ -11,20 +11,22 @@
 ### I used our outCovComb output estimated at diploid level
 
 rm(list=ls())
-setwd("/Users/maohuang/Desktop/Kelp/SugarKelpBreeding/")
-#install.packages("here")
 
-here::i_am("TraitAnalyses201003/OptiSel/ReplicationScript.R")
-setwd("TraitAnalyses201003/OptiSel/Examples")
-
+setwd("/Users/maohuang/Desktop/Kelp/Simulation_Study/SugarKelpBreeding/TraitAnalyses201003/OptiSel/Examples")
 
 ### Input the outCovComb_dip
-load(here("TraitAnalyses201003/ReorderPedigree","outCovComb_dip_0116_2021.Rdata"))
+WD<-"/Users/maohuang/Desktop/Kelp/Simulation_Study/SugarKelpBreeding/TraitAnalyses201003"
+datafdr<-paste0(WD,"/data/")
+load(paste0(datafdr,"outCovComb4_Mix_Conden_0712_2021.Rdata"))
   ls()
-  outCovComb4_dipOrder[1:4,1:4]
+  outCovComb4_MixOrder[1:4,1:4]
 
 ### Input GEBVs
-phenoBV<-read.csv(here("allBLUPs_PlotsOnly_withSGP_866_AddfndrsMrkData_0116_2021_dip.csv"),sep=",",header=T,row.names=1)
+TraitWant<-"DWpM"
+diphap<-"MixedPloidy"
+## Use data
+yr<-"Three"
+phenoBV<-read.csv(paste0(datafdr,"allBLUPs_Plots+Individuals_withSGP_950_AddfndrsMrkData_",diphap,"_",yr,"_0715_2021.csv"))
 
 library("optiSel")
 library("data.table")
@@ -34,13 +36,27 @@ library(ggplot2)
 
 ###############################JL codes
 
-load("Prepared_PedKelp_Pedig_phen_0202_2021.RData")
+#load("Prepared_PedKelp_Pedig_phen_0202_2021.RData")
+### The BLUPs value, then give "isCandidate" column to indicate which one is used for selection; also add "Sex"
 
+phen<-phenoBV[,c("X",TraitWant)]
+  head(phen)
+  str(phen)
+rownames(phen)<-phen$X
+#phen<-phen[,!colnames(phen)=="X"]
+
+## Has MG/FG in the name but no "x"
+## Not SP Crosses, Not founders
+ListGP<-rownames(phen)[(!grepl("x",rownames(phen)))& (grepl("MG",rownames(phen))|grepl("FG",rownames(phen)))]
+phen$isCandidate<-ifelse(rownames(phen)%in%ListGP,TRUE,FALSE)
 library(stringr)
 phenGP <- phen[phen$isCandidate,]
-
+phenGP$Sex<-substring(text=as.vector(stringr::str_split_fixed(rownames(phenGP),"-",4)[,4]),first=1,last=1)
+phenGP$Sex<-ifelse(phenGP$Sex=="F","female","male")
 ### RM SNE ones
-phenGP$loc<-str_split_fixed(rownames(phenGP),"-", 4)[,2] 
+phenGP$loc<-stringr::str_split_fixed(rownames(phenGP),"-", 4)[,2] 
+
+### !!!! Subsetting the GPs by location
 
 GOM<-c("CB","CC","JS","LD","LL","NC","NL","OD","OI","SF","UCONN")
 SNE<-c("BL","FI","FW","PI","TI","LR","DB")
@@ -50,13 +66,17 @@ phenGP$Region<-ifelse(phenGP$loc%in%GOM,"GOM","SNE")
   phenGP[phenGP$Region=="SNE",]$loc%in%SNE
 
 phenGP<-phenGP[phenGP$Region=="GOM",]  # 405 individuals
-phenGP<-phenGP[,-c((ncol(phenGP)-1),ncol(phenGP))] # rm loc and Region cols
+  dim(phenGP)
+phenGP<-phenGP[,!(colnames(phenGP)%in%c("loc","Region"))] # rm loc and Region cols
+
+fPED<-outCovComb4_MixOrder
 
 grmGP <- fPED[rownames(fPED)%in%rownames(phenGP), colnames(fPED)%in%rownames(phenGP)]
   ### Order phenGP and grmGP?
 phenGP<-phenGP[match(rownames(phenGP),rownames(grmGP)),]
-  
-forOptiSel <- data.frame(Indiv=rownames(phenGP), Trait=phenGP$DWpM,Sex=phenGP$Sex)  ### Trait here!!!
+    identical(rownames(phenGP),rownames(grmGP))
+    
+forOptiSel <- data.frame(Indiv=rownames(phenGP), Trait=phenGP[,colnames(phenGP)==TraitWant],Sex=phenGP$Sex)  ### Trait here!!!
 #invisible(capture.output(cand2 <- optiSel::candes(forOptiSel, grm=grmGP, quiet=T)))
 cand <- optiSel::candes(forOptiSel, grm=grmGP)
 cand$mean
@@ -78,8 +98,8 @@ for (Ne in allNe){
   ocGP <- cbind(ocGP, oc[,"oc"])
 }
 
-sum(ocList[ocList$Ne=="Ne60",]$oc>0.005)
-sum(ocList[ocList$Ne=="Ne600",]$oc>0.005)
+sum(ocList[ocList$Ne=="Ne60",]$oc>0.005)   #60
+sum(ocList[ocList$Ne=="Ne600",]$oc>0.005)  #66
 data2<-ocList[ocList$Ne=="Ne60",]
 data3<-ocList[ocList$Ne=="Ne600",]  #ocList from JL codes estimation
 
@@ -104,7 +124,7 @@ TwoTraits_oc$loc<-str_split_fixed(rownames(TwoTraits_oc),"-", 4)[,2]
 TwoTraits_oc$Region<-ifelse(TwoTraits_oc$loc%in%GOM,"GOM","SNE")
   TwoTraits_oc[TwoTraits_oc$Region=="SNE",]$loc%in%SNE
   
-write.csv(TwoTraits_oc,"Candidates_TwoTraits_oc_0204_2021.csv")
+write.csv(TwoTraits_oc,paste0("Candidates_",TraitWant,"Traits_oc_0717_2021.csv"))
 
 TwoTraits_oc<-TwoTraits_oc[order(TwoTraits_oc$Sex,-TwoTraits_oc$oc_using_DWpM),]
     TwoTraits_oc$DWpM[50]  # 0.05
@@ -126,6 +146,7 @@ plotA<-ggplot(data=NULL,aes(log10(allNe),apply(ocGP, 2, max)))+
   theme_bw()+
   theme(panel.grid.major = element_blank())
 
+print(A)
 #scale_x_continuous(trans="log10",breaks=c(),label=c())
 
 # Plot how many GP should have contribution of at least 10% of max contribution
@@ -145,8 +166,8 @@ ggarrange(plotA, plotB,
 
 ##################################
 # 
-data2<-read.csv("Candidates_TwoTraits_oc_0204_2021.csv",sep=",",header=T)
-data2$Trait<-data2$DWpM
+data2<-read.csv(paste0("Candidates_",TraitWant,"Traits_oc_0717_2021.csv"),sep=",",header=TRUE)
+data2$Trait<-data2[,colnames(data2)%in%TraitWant]
 data2$oc<-data2$oc_using_DWpM
 #### Plot out Trait vs oc separating The 50th value and <=0
 
@@ -176,7 +197,7 @@ plot2<-plot(dataF)
 plot3<-plot(dataM)
 
 ### Trait !!!
-pdf(file="Candidates_Ne60_FG_MG_DwPM_withOnlyub_GOMonly_0204_2021.pdf",
+pdf(file=paste0("Candidates_Ne60_FG_MG_",TraitWant,"_withOnlyub_GOMonly_0717_2021.pdf"),
     width=8.5,height =11)
 
 library(ggpubr)
